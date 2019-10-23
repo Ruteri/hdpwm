@@ -7,6 +7,8 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 add_library(cryptopp STATIC IMPORTED)
 set_target_properties(cryptopp PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/external/cryptopp/libcryptopp.a)
 
+add_subdirectory(external/leveldb)
+
 include_directories(.)
 
 add_subdirectory(src)
