@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <src/cli/utils.h>
+
 class Screen {
 public:
 	virtual std::unique_ptr<Screen> run() = 0;
@@ -22,3 +24,4 @@ public:
 	std::unique_ptr<Screen> run() override;
 };
 
+void show_error(const Point& pos, const std::string& msg);
