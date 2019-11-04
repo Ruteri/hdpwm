@@ -64,7 +64,7 @@ void NewKeychainScreen::init_db_path_input() {
 	};
 
 	auto on_cancel = [this](std::string&) {
-		wmanager->set_controller(new StartScreen(wmanager));
+		wmanager->pop_controller();
 	};
 
 	db_path_input.reset(new StringInputHandler(origin, title, on_accept, on_cancel));
@@ -78,8 +78,7 @@ void NewKeychainScreen::process_db_path_input(std::string &path) {
 		this->state = State::PW_INPUT;
 		this->init_password_input();
 	} else {
-		auto to_start_screen = [this]() { wmanager->set_controller(new StartScreen(wmanager)); };
-		wmanager->set_controller(new ErrorScreen(wmanager, {5, 5}, validation_result.reason, to_start_screen));
+		wmanager->set_controller(std::make_shared<ErrorScreen>(wmanager, Point{2, 5}, validation_result.reason));
 	}
 }
 
@@ -93,7 +92,7 @@ void NewKeychainScreen::init_password_input() {
 	};
 
 	auto on_cancel = [this](utils::sensitive_string&) {
-		wmanager->set_controller(new StartScreen(wmanager));
+		wmanager->pop_controller();
 	};
 
 	password_input.reset(new SensitiveInputHandler(origin, title, on_accept, on_cancel));
@@ -122,8 +121,7 @@ void NewKeychainScreen::process_password_input(utils::sensitive_string& pw) {
 	try {
 		keychain = std::move(Keychain::initialize_with_seed(db_path.value(), std::move(seed), std::move(pw_hash)));
 	} catch(const std::exception& e) {
-		auto to_start_screen = [this]() { wmanager->set_controller(new StartScreen(wmanager)); };
-		wmanager->set_controller(new ErrorScreen(wmanager, {2, 5}, e.what(), to_start_screen));
+		wmanager->set_controller(std::make_shared<ErrorScreen>(wmanager, Point{2, 5}, e.what()));
 	}
 }
 
@@ -152,7 +150,7 @@ void NewKeychainScreen::m_on_key(int key) {
 		if (password_input) password_input->process_key(key);
 		break;
 	case State::MNEMONIC_CONFIRM:
-		wmanager->set_controller(new KeychainMainScreen(wmanager, std::move(keychain)));
+		wmanager->set_controller(std::make_shared<KeychainMainScreen>(wmanager, std::move(keychain)));
 		break;
 	}
 }
@@ -170,7 +168,7 @@ void ImportKeychainScreen::init_db_path_input() {
 	};
 
 	auto on_cancel = [this](std::string&) {
-		wmanager->set_controller(new StartScreen(wmanager));
+		wmanager->pop_controller();
 	};
 
 	db_path_input.reset(new StringInputHandler(origin, title, on_accept, on_cancel));
@@ -184,8 +182,7 @@ void ImportKeychainScreen::process_db_path_input(std::string &path) {
 		this->state = State::PW_INPUT;
 		this->init_password_input();
 	} else {
-		auto to_start_screen = [this]() { wmanager->set_controller(new StartScreen(wmanager)); };
-		wmanager->set_controller(new ErrorScreen(wmanager, {5, 5}, validation_result.reason, to_start_screen));
+		wmanager->set_controller(std::make_shared<ErrorScreen>(wmanager, Point{2, 5}, validation_result.reason));
 	}
 }
 
@@ -199,7 +196,7 @@ void ImportKeychainScreen::init_password_input() {
 	};
 
 	auto on_cancel = [this](utils::sensitive_string&) {
-		wmanager->set_controller(new StartScreen(wmanager));
+		wmanager->pop_controller();
 	};
 
 	password_input.reset(new SensitiveInputHandler(origin, title, on_accept, on_cancel));
@@ -210,10 +207,9 @@ void ImportKeychainScreen::process_password_input(utils::sensitive_string& pw) {
 
 	try {
 		keychain = std::move(Keychain::open(db_path.value(), std::move(pw_hash)));
-		wmanager->set_controller(new KeychainMainScreen(wmanager, std::move(keychain)));
+		wmanager->set_controller(std::make_shared<KeychainMainScreen>(wmanager, std::move(keychain)));
 	} catch(const std::exception& e) {
-		auto to_start_screen = [this]() { wmanager->set_controller(new StartScreen(wmanager)); };
-		wmanager->set_controller(new ErrorScreen(wmanager, {2, 5}, e.what(), to_start_screen));
+		wmanager->set_controller(std::make_shared<ErrorScreen>(wmanager, Point{2, 5}, e.what()));
 	}
 }
 

@@ -14,7 +14,7 @@ KeychainDirectoryNode::KeychainDirectoryNode(const KeychainDirectory &d, Keychai
 		this->entries.emplace_back(entry, this);
 	}
 
-	// For now, recurse
+	// For now, recurse (it's not deep and done only on startup)
 	for (auto &dir : d.dirs) {
 		this->dirs.emplace_back(dir, this);
 	}
@@ -57,6 +57,7 @@ KeychainMainScreen::KeychainMainScreen(WindowManager *wmanager, std::unique_ptr<
 	flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
 }
 KeychainMainScreen::~KeychainMainScreen() {
+	cleanup();
 	if (keychain_root_dir) delete keychain_root_dir;
 }
 
@@ -64,10 +65,6 @@ KeychainMainScreen::~KeychainMainScreen() {
 void KeychainMainScreen::m_init() {
 	clear();
 	refresh();
-
-	cbreak();
-	noecho();
-	keypad(stdscr, TRUE);
 
 	getmaxyx(stdscr, this->maxlines, this->maxcols);
 
@@ -100,10 +97,12 @@ void KeychainMainScreen::m_init() {
 }
 
 void KeychainMainScreen::m_cleanup() {
-	delwin(this->header);
-	delwin(this->main);
-	delwin(this->details);
-	delwin(this->footer);
+	for (WINDOW *win : {header, main, details, footer}) {
+		wclear(win);
+		wrefresh(win);
+		delwin(win);
+	}
+	header = main = details = footer = nullptr;
 }
 
 void KeychainMainScreen::m_draw() {
@@ -178,6 +177,12 @@ void KeychainMainScreen::m_on_key(int key) {
 			// TODO: move to edit screen (or sth like that)
 		},
 		}, flat_entries_cache[this->c_selected_index]);
+		break;
+	case 'n':
+		wmanager->push_controller(std::make_shared<NewEntryScreen>(wmanager, [](KeychainEntry){}, [](){}));
+		break;
+	case 'q':
+		wmanager->pop_controller();
 		break;
 	}
 }

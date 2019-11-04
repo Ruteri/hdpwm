@@ -8,8 +8,8 @@
 
 StartScreen::StartScreen(WindowManager *wmanager): ScreenController(wmanager) {
 	std::vector<BasicMenuEntry> start_screen_menu_entries = {
-		{ "Import keychain", [wmanager]() { wmanager->set_controller(new ImportKeychainScreen(wmanager)); } },
-		{ "Create new keychain", [wmanager]() { wmanager->set_controller(new NewKeychainScreen(wmanager)); } },
+		{ "Import keychain", [wmanager]() { wmanager->push_controller(std::make_shared<ImportKeychainScreen>(wmanager)); } },
+		{ "Create new keychain", [wmanager]() { wmanager->push_controller(std::make_shared<NewKeychainScreen>(wmanager)); } },
 		{ "Exit", [wmanager]() { wmanager->stop(); } },
 	};
 
@@ -22,13 +22,28 @@ void StartScreen::m_draw() {
 	mvaddstr(0, 0, "Deterministic password manager");
 
 	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 0, "<right arrow> to accept | <up / down arrow> to change");
+	mvaddstr(maxlines, 0, "<return / home> to accept | <up / down arrow> to change | <q> to quit");
 
 	start_screen_menu->draw();
 }
 
 void StartScreen::m_on_key(int key) {
-	start_screen_menu->process_key(key);
+	if (key == 'q') wmanager->stop();
+	else start_screen_menu->process_key(key);
+}
+
+
+NewEntryScreen::NewEntryScreen(WindowManager *wmanager, decltype(on_accept) on_accept, decltype(on_cancel) on_cancel): ScreenController(wmanager), on_accept(on_accept), on_cancel(on_cancel) {}
+
+void NewEntryScreen::m_draw() {
+	clear();
+	refresh();
+
+	// StringInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel);
+}
+
+void NewEntryScreen::m_on_key(int key) {
+	wmanager->pop_controller();
 }
 
 
@@ -42,5 +57,5 @@ void ErrorScreen::m_draw() {
 }
 
 void ErrorScreen::m_on_key(int) {
-	on_ok();
+	wmanager->pop_controller();
 }

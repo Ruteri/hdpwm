@@ -20,7 +20,7 @@ void InputHandler::process_key(int key) {
 StringInputHandler::StringInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel): InputHandlerCallback<std::string>(std::move(on_accept), std::move(on_cancel)), origin(origin), title(title) {}
 
 void StringInputHandler::on_backspace() {
-	this->value.pop_back();
+	if (this->value.length() > 0) this->value.pop_back();
 }
 
 void StringInputHandler::on_char(char c) {
@@ -38,7 +38,7 @@ void StringInputHandler::draw() {
 SensitiveInputHandler::SensitiveInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel): InputHandlerCallback<utils::sensitive_string>(std::move(on_accept), std::move(on_cancel)), origin(origin), title(title) {}
 
 void SensitiveInputHandler::on_backspace() {
-	this->value.pop_back();
+	if (this->value.size() > 0) this->value.pop_back();
 }
 
 void SensitiveInputHandler::on_char(char c) {

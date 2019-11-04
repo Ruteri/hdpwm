@@ -18,6 +18,8 @@ private:
 	virtual void m_cleanup() {}
 	virtual void m_draw() = 0;
 	virtual void m_on_resize() { this->cleanup(); this->init(); this->draw(); }
+
+	/* TODO: return whether input was processed and should not propagate until top level controller */
 	virtual void m_on_key(int key) = 0;
 
 protected:
@@ -25,6 +27,7 @@ protected:
 
 public:
 	ScreenController(WindowManager *wmanager): wmanager(wmanager) {}
+	virtual ~ScreenController() { cleanup(); }
 
 	void init() { this->m_init(); }
 	void cleanup() { this->m_cleanup(); }
@@ -52,13 +55,12 @@ public:
 class ErrorScreen: public ScreenController {
 	Point origin;
 	std::string msg;
-	std::function<void()> on_ok;
 
 	void m_draw() override;
 	void m_on_key(int) override;
 
 public:
-	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg, std::function<void()> on_ok): ScreenController(wmanager), origin(origin), msg(std::move(msg)), on_ok(on_ok) {}
+	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg): ScreenController(wmanager), origin(origin), msg(std::move(msg)) {}
 };
 
 /* Common type for input objects */
@@ -78,7 +80,7 @@ public:
 };
 
 class NewKeychainScreen: public ScreenController {
-	enum class State { DB_PATH_INPUT, PW_INPUT, MNEMONIC_CONFIRM } state;
+	enum class State { DB_PATH_INPUT, PW_INPUT, MNEMONIC_CONFIRM } state = State::DB_PATH_INPUT;
 
 	void init_db_path_input();
 	void process_db_path_input(std::string &path);
@@ -104,7 +106,7 @@ public:
    have to be that so it should not be generalized
 */
 class ImportKeychainScreen: public ScreenController {
-	enum class State { DB_PATH_INPUT, PW_INPUT } state;
+	enum class State { DB_PATH_INPUT, PW_INPUT } state = State::DB_PATH_INPUT;
 
 	void init_db_path_input();
 	void process_db_path_input(std::string &path);
@@ -164,4 +166,15 @@ class KeychainMainScreen: public ScreenController {
 public:
 	KeychainMainScreen(WindowManager*, std::unique_ptr<Keychain>);
 	~KeychainMainScreen();
+};
+
+class NewEntryScreen: public ScreenController {
+	std::function<void(KeychainEntry)> on_accept;
+	std::function<void()> on_cancel;
+
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+public:
+	NewEntryScreen(WindowManager *wmanager, decltype(on_accept) on_accept, decltype(on_cancel) on_cancel);
 };

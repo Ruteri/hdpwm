@@ -14,7 +14,7 @@
 int main() {
 
 	WindowManager wm;
-	wm.set_controller(new StartScreen(&wm));
+	wm.set_controller(std::make_shared<StartScreen>(&wm));
 	wm.run();
 
 	return 0;
