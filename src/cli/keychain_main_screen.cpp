@@ -59,7 +59,7 @@ void KeychainMainScreen::m_init() {
 
 	this->footer = newwin(1, this->maxcols / 5 * 3, this->maxlines - 1, 0);
 	mvwaddstr(this->footer, 0, 0,
-	    "<↑↓> to navigate | <n/N> to add new entry/group | <↲> to view & edit | <q> to quit");
+	    "<↑↓> to navigate | <n/N> to add new entry/group | <↲> to view | <e> to edit | <q> to quit");
 
 	wrefresh(this->footer);
 }
@@ -151,6 +151,14 @@ void KeychainMainScreen::m_on_key(int key) {
 			        flat_entries_cache = flatten_dirs(keychain_root_dir);
 		        },
 		        [this](KeychainEntry *entry) { post_entry_view(entry); },
+		    },
+		    flat_entries_cache[this->c_selected_index]);
+		break;
+	case 'e':
+		std::visit(
+		    overloaded{
+		        [this](KeychainDirectory *dir) { post_dir_edit(dir); },
+		        [this](KeychainEntry *entry) { post_entry_edit(entry); },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
@@ -271,6 +279,50 @@ void KeychainMainScreen::post_directory_form() {
 }
 
 void KeychainMainScreen::post_entry_view(KeychainEntry *entry) {
+	auto on_form_done = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
+
+	auto entry_view_form =
+	    std::make_unique<FormController>(wmanager, this, this->details, on_form_done, on_form_done);
+
+	entry_view_form->add_label(Point{1, 0}, "Name: " + entry->meta.name);
+
+	entry_view_form->add_label(Point{2, 0}, "Secret: ");
+	entry_view_form->add_output(std::make_unique<SensitiveOutputHandler>(
+	    Point{2, 8}, utils::sensitive_string("somesecret")));
+
+	entry_view_form->add_label(Point{3, 0}, "Details: " + entry->meta.details);
+
+	state = State::Editing;
+	wmanager->push_controller(std::move(entry_view_form));
+}
+
+void KeychainMainScreen::post_dir_edit(KeychainDirectory *dir) {
+	auto on_form_done = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
+
+	auto dir_edit_form =
+	    std::make_unique<FormController>(wmanager, this, this->details, on_form_done, on_form_done);
+
+	auto on_name_change_accept = [dir](const std::string &new_name) {
+		if (new_name.empty()) return false;
+		dir->meta.name = new_name;
+		return true;
+	};
+
+	auto name_input =
+	    dir_edit_form->add_field<StringInputHandler>(Point{1, 0}, "Name: ", on_name_change_accept);
+	name_input->set_value(dir->meta.name);
+
+	state = State::Editing;
+	wmanager->push_controller(std::move(dir_edit_form));
+}
+
+void KeychainMainScreen::post_entry_edit(KeychainEntry *entry) {
 	auto on_form_done = [this]() {
 		state = State::Browsing;
 		this->wmanager->pop_controller();

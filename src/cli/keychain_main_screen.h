@@ -21,7 +21,10 @@ class KeychainMainScreen : public ScreenController {
 
 	void post_entry_form();
 	void post_directory_form();
+
 	void post_entry_view(KeychainEntry *entry);
+	void post_dir_edit(KeychainDirectory *dir);
+	void post_entry_edit(KeychainEntry *entry);
 
 	void draw_entries_box();
 	void draw_details_box();
