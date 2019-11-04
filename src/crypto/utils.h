@@ -23,6 +23,8 @@ struct sensitive_string {
 
 	~sensitive_string();
 
+	explicit operator std::string() const;
+
 	size_t size() const;
 	void resize(size_t);
 	void reserve(size_t);

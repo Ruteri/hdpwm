@@ -13,7 +13,14 @@ class TimedEncryptionKey {
 
   public:
 	TimedEncryptionKey() = default;
-	TimedEncryptionKey(crypto::PasswordHash &&pw) : valid(true), ec(std::move(pw)) {}
+
+	TimedEncryptionKey &operator=(const TimedEncryptionKey &other) = default;
+	TimedEncryptionKey(const TimedEncryptionKey &other) = default;
+
+	TimedEncryptionKey &operator=(TimedEncryptionKey &&other) = default;
+	TimedEncryptionKey(TimedEncryptionKey &&other) = default;
+
+	explicit TimedEncryptionKey(crypto::PasswordHash &&pw) : valid(true), ec(std::move(pw)) {}
 
 	// TODO: should lock
 	const PasswordHash &getPasswordHash() { return ec; }

@@ -22,7 +22,7 @@ template <int S, typename CV> struct ByteArray {
 	ByteArray(const ByteArray &other) : _data(other._data) {}
 	ByteArray(ByteArray &&other) { this->_data = std::move(other._data); }
 
-	ByteArray &operator=(const ByteArray &&other) {
+	ByteArray &operator=(const ByteArray &other) {
 		this->_data = other._data;
 		return *this;
 	}

@@ -65,6 +65,18 @@ sensitive_string::~sensitive_string() {
 	delete[] this->data;
 }
 
+sensitive_string::operator std::string() const {
+	std::string rs;
+	const auto size = this->size();
+	rs.reserve(size + 1); // additional space for null char
+	for (auto i = 0; i < size; ++i) {
+		rs.push_back(this->data[i]);
+	}
+	rs[size] = '\0';
+
+	return rs;
+}
+
 size_t sensitive_string::size() const { return this->index; }
 
 void sensitive_string::resize(size_t new_size) {

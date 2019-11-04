@@ -21,7 +21,7 @@ KeychainMainScreen::KeychainMainScreen(
     ScreenController(wmanager),
     keychain(std::move(keychain)) {
 	keychain_root_dir = this->keychain->get_root_dir();
-	flat_entries_cache = Keychain::flatten_dirs(keychain_root_dir);
+	flat_entries_cache = flatten_dirs(keychain_root_dir);
 }
 
 KeychainMainScreen::~KeychainMainScreen() {
@@ -151,7 +151,7 @@ void KeychainMainScreen::m_on_key(int key) {
 		    overloaded{
 		        [this](KeychainDirectory::ptr dir) {
 			        dir->is_open ^= 0x1;
-			        flat_entries_cache = Keychain::flatten_dirs(keychain_root_dir);
+			        flat_entries_cache = flatten_dirs(keychain_root_dir);
 		        },
 		        [this](KeychainEntry::ptr entry) { post_entry_view(entry); },
 		    },
@@ -209,7 +209,7 @@ void KeychainMainScreen::post_entry_form() {
 		keychain->save_entries(keychain_root_dir);
 
 		state = State::Browsing;
-		flat_entries_cache = Keychain::flatten_dirs(keychain_root_dir);
+		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
 	auto on_form_cancel = [this]() {
@@ -269,7 +269,7 @@ void KeychainMainScreen::post_directory_form() {
 
 		keychain->save_entries(keychain_root_dir);
 		state = State::Browsing;
-		flat_entries_cache = Keychain::flatten_dirs(keychain_root_dir);
+		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
 	auto on_form_cancel = [this]() {

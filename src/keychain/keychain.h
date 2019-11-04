@@ -1,74 +1,18 @@
 #pragma once
 
-#include <src/crypto/crypto.h>
+#include <src/keychain/keychain_entry.h>
+
 #include <src/crypto/structs.h>
 #include <src/crypto/timed_encryption_key.h>
-#include <src/crypto/utils.h>
 
 #include <filesystem>
-#include <variant>
-
-namespace crypto {
-class Seed;
-class PasswordHash;
-struct DerivationPath;
-} // namespace crypto
 
 namespace leveldb {
 class DB;
 }
 
-// helper for visitors
-template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
-
-struct KeychainEntryMeta {
-	std::string name;
-	std::string details;
-	crypto::DerivationPath dpath;
-};
-
-struct KeychainDirectoryMeta {
-	std::string name;
-	std::string details;
-
-	// TODO: directories should have their own root keys derived from master key
-};
-
-struct KeychainDirectory;
-
-struct KeychainEntry {
-	using ptr = std::shared_ptr<KeychainEntry>;
-
-	KeychainEntryMeta meta;
-	std::weak_ptr<KeychainDirectory> parent_dir;
-
-	KeychainEntry(const KeychainEntryMeta &meta, std::weak_ptr<KeychainDirectory> parent_dir) :
-	    meta(meta), parent_dir(parent_dir) {}
-};
-
-struct KeychainDirectory {
-	using ptr = std::shared_ptr<KeychainDirectory>;
-
-	KeychainDirectoryMeta meta;
-	// std::weak_ptr<KeychainDirectory> parent;
-
-	std::vector<ptr> dirs = {};
-	std::vector<KeychainEntry::ptr> entries = {};
-
-	int dir_level;
-	bool is_open = false;
-
-	KeychainDirectory(const KeychainDirectoryMeta &meta, int dir_level) :
-	    meta(meta), dir_level(dir_level) {}
-
-	KeychainDirectory(const KeychainDirectoryMeta &meta, const ptr &parent) :
-	    meta(meta), dir_level(parent->dir_level + 1) {}
-};
-
-using AnyKeychainPtr = std::variant<KeychainEntry::ptr, KeychainDirectory::ptr>;
-
 class Keychain {
+  protected:
 	std::filesystem::path data_path;
 
 	leveldb::DB *db;
@@ -98,6 +42,4 @@ class Keychain {
 	static utils::sensitive_string encode_secret(
 	    unsigned char *in_data, size_t in_size, size_t out_size);
 	utils::sensitive_string derive_secret(const crypto::DerivationPath &dpath);
-
-	static std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root);
 };
