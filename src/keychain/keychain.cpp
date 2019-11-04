@@ -6,16 +6,17 @@ constexpr char DB_KEY_SEED[] = "seed";
 
 Keychain Keychain::initialize_with_seed(std::filesystem::path path, crypto::Seed&& seed, crypto::PasswordHash&& pw_hash) {
 	Keychain kc;
+	kc.data_path = std::move(path);
 	kc.tec = std::move(crypto::TimedEncryptionKey(std::move(pw_hash)));
 
 	leveldb::Options options;
 	options.create_if_missing = true;
 
-	if (!std::filesystem::create_directory(path)) {
+	if (!std::filesystem::create_directory(kc.data_path)) {
 		throw std::runtime_error("could not create directory at given path");
 	}
 
-	auto db_path = path / "db";
+	auto db_path = kc.data_path / "db";
 	leveldb::Status status = leveldb::DB::Open(options, db_path.string(), &kc.db);
 	if (!status.ok()) {
 		throw std::runtime_error("could not initialize db");
@@ -30,9 +31,10 @@ Keychain Keychain::initialize_with_seed(std::filesystem::path path, crypto::Seed
 
 Keychain Keychain::open(std::filesystem::path path, crypto::PasswordHash&& pw_hash) {
 	Keychain kc;
+	kc.data_path = std::move(path.string());
 	kc.tec = std::move(crypto::TimedEncryptionKey(std::move(pw_hash)));
 
-	auto db_path = path / "db";
+	auto db_path = kc.data_path / "db";
 	leveldb::Status status = leveldb::DB::Open(leveldb::Options(), db_path.string(), &kc.db);
 	if (!status.ok()) {
 		throw std::runtime_error("could not open db");

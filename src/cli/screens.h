@@ -2,9 +2,11 @@
 
 #include <src/cli/utils.h>
 
-#include <memory>
-
 #include <src/keychain/keychain.h>
+
+#include <curses.h>
+
+#include <memory>
 
 class Screen {
 public:
@@ -28,6 +30,15 @@ public:
 
 class KeychainMainScreen: public Screen {
 	Keychain keychain;
+	std::vector<KeychainEntry> keychain_entries;
+	int selected_entry = 0;
+
+	int maxlines, maxcols;
+	WINDOW *header, *main, *details, *footer;
+
+	void create_windows();
+	void delete_windows();
+	void draw();
 
 public:
 	KeychainMainScreen(Keychain&&);
