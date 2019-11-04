@@ -44,7 +44,7 @@ TEST_CASE( "24-word mnemonic is generated", "[generate_mnemonic_24w]" ) {
 TEST_CASE( "seeds are calculated properly", "[seeds_vector]" ) {
 	for (auto &tc : mnemonic_test_vector) {
 		auto seed = crypto::mnemonic_to_seed(std::move(tc.mnemonic));
-		REQUIRE( seed._data == tc.expected_seed );
+		REQUIRE( seed._data == tc.expected_seed._data );
 	}
 }
 
@@ -53,48 +53,4 @@ TEST_CASE( "seed calculation throws on invalid word", "[seeds_vector_throws_on_i
 	for (auto &im : invalid_mnemonic_test_vector) {
 		(void) crypto::mnemonic_to_seed(std::move(im.mnemonic));
 	}
-}
-
-TEST_CASE( "seeds are encrypted properly", "[encrypt_seed]" ) {
-	utils::sensitive_string password("password");
-
-	crypto::PasswordHash expected_password_hash;
-	auto expected_password_hash_bytes = utils::unhexify("99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f");
-	std::copy(expected_password_hash_bytes.begin(), expected_password_hash_bytes.end(), expected_password_hash.begin());
-
-	crypto::Seed seed;
-	auto seed_bytesv = utils::unhexify("f29b278b6525f2bf2e78c24ed086d58836438509bea3d837e1434ee6d3b082c23e60a199c9eb05dc1f6307bb99aca5025e2241fec580312b0064b375020cc2fd");
-	std::copy(seed_bytesv.begin(), seed_bytesv.end(), seed.begin());
-
-	crypto::EncryptedSeed expected_encrypted_seed;
-	auto expected_seed_bytesv = utils::unhexify("430ce4aea8c215883057e47fc5666d6fcd60359334fe7cec828cdedfdaa230e526001cef8a8138b3f317bc573ffbc7b0fd0cb342d9de01b4b7a3fe6ae50e086f");
-	std::copy(expected_seed_bytesv.begin(), expected_seed_bytesv.end(), expected_encrypted_seed.begin());
-
-
-	crypto::PasswordHash password_hash = std::move(crypto::hash_password(std::move(password)));
-
-	REQUIRE( password_hash._data == expected_password_hash._data );
-
-	crypto::EncryptedSeed encrypted_seed = crypto::encrypt_seed(std::move(seed), std::move(password_hash));
-
-	REQUIRE( encrypted_seed._data == expected_encrypted_seed._data );
-}
-
-TEST_CASE( "seeds are decrypted properly", "[decrypt_seed]" ) {
-	utils::sensitive_string password("password");
-
-	crypto::EncryptedSeed encrypted_seed;
-	auto seed_bytesv = utils::unhexify("430ce4aea8c215883057e47fc5666d6fcd60359334fe7cec828cdedfdaa230e526001cef8a8138b3f317bc573ffbc7b0fd0cb342d9de01b4b7a3fe6ae50e086f");
-	std::copy(seed_bytesv.begin(), seed_bytesv.end(), encrypted_seed.begin());
-
-	crypto::Seed expected_seed;
-	auto expected_seed_bytesv = utils::unhexify("f29b278b6525f2bf2e78c24ed086d58836438509bea3d837e1434ee6d3b082c23e60a199c9eb05dc1f6307bb99aca5025e2241fec580312b0064b375020cc2fd");
-	std::copy(expected_seed_bytesv.begin(), expected_seed_bytesv.end(), expected_seed.begin());
-
-
-	crypto::PasswordHash password_hash = std::move(crypto::hash_password(std::move(password)));
-
-	crypto::Seed seed = crypto::decrypt_seed(std::move(encrypted_seed), std::move(password_hash));
-
-	REQUIRE( seed._data == expected_seed._data );
 }

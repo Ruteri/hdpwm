@@ -1,6 +1,7 @@
 #include <src/cli/manager.h>
 
 #include <src/cli/color.h>
+#include <src/cli/error_screen.h>
 #include <src/cli/screen_controller.h>
 #include <src/cli/utils.h>
 
@@ -91,71 +92,80 @@ void WindowManager::run() {
 	std::stack<std::shared_ptr<ScreenController>> controller_stack;
 
 	for (;;) {
-		WindowEvent ev;
+		try {
+			WindowEvent ev;
 
-		std::shared_ptr<ScreenController> current_controller;
-		if (!controller_stack.empty()) current_controller = controller_stack.top();
+			std::shared_ptr<ScreenController> current_controller;
+			if (!controller_stack.empty()) current_controller = controller_stack.top();
 
-		if (current_controller) current_controller->draw();
+			if (current_controller) current_controller->draw();
 
-		{
-			std::unique_lock<std::mutex> lk(ev_mutex);
-			while (ev_queue.empty()) ev_cv.wait(lk);
+			{
+				std::unique_lock<std::mutex> lk(ev_mutex);
+				while (ev_queue.empty()) ev_cv.wait(lk);
 
-			if (ev_queue.empty()) continue;
+				if (ev_queue.empty()) continue;
 
-			ev = std::move(ev_queue.front());
-			ev_queue.pop();
-		}
+				ev = std::move(ev_queue.front());
+				ev_queue.pop();
+			}
 
-		if (current_controller) {
-			switch (ev.code) {
-			case EVT::EV_KEY:
-				current_controller->on_key(std::get<int>(ev.data));
-				break;
-			case EVT::EV_RESIZE:
-				current_controller->on_resize();
-				break;
-			case EVT::EV_SET_CONTROLLER:
-				current_controller->cleanup();
-				controller_stack.pop();
-				controller_stack.push(std::get<std::shared_ptr<ScreenController>>(ev.data));
-				current_controller = controller_stack.top();
-				current_controller->init();
-				break;
-			case EVT::EV_PUSH_CONTROLLER:
-				current_controller->cleanup();
-				controller_stack.push(
-				    std::move(std::get<std::shared_ptr<ScreenController>>(ev.data)));
-				current_controller = controller_stack.top();
-				current_controller->init();
-				break;
-			case EVT::EV_POP_CONTROLLER:
-				current_controller->cleanup();
-				controller_stack.pop();
-				if (!controller_stack.empty()) controller_stack.top()->init();
-				break;
-			case EVT::EV_QUIT:
-				should_getch = false;
-				while (!controller_stack.empty()) {
+			if (current_controller) {
+				switch (ev.code) {
+				case EVT::EV_KEY:
+					current_controller->on_key(std::get<int>(ev.data));
+					break;
+				case EVT::EV_RESIZE:
+					current_controller->on_resize();
+					break;
+				case EVT::EV_SET_CONTROLLER:
+					current_controller->cleanup();
 					controller_stack.pop();
+					controller_stack.push(std::get<std::shared_ptr<ScreenController>>(ev.data));
+					current_controller = controller_stack.top();
+					current_controller->init();
+					break;
+				case EVT::EV_PUSH_CONTROLLER:
+					current_controller->cleanup();
+					controller_stack.push(
+					    std::move(std::get<std::shared_ptr<ScreenController>>(ev.data)));
+					current_controller = controller_stack.top();
+					current_controller->init();
+					break;
+				case EVT::EV_POP_CONTROLLER:
+					current_controller->cleanup();
+					controller_stack.pop();
+					if (!controller_stack.empty()) controller_stack.top()->init();
+					break;
+				case EVT::EV_QUIT:
+					should_getch = false;
+					while (!controller_stack.empty()) {
+						controller_stack.pop();
+					}
+					getch_thread.join();
+					return;
 				}
-				getch_thread.join();
-				return;
+			} else {
+				switch (ev.code) {
+				case EVT::EV_SET_CONTROLLER:
+				case EVT::EV_PUSH_CONTROLLER:
+					controller_stack.push(std::get<std::shared_ptr<ScreenController>>(ev.data));
+					controller_stack.top()->init();
+					break;
+				case EVT::EV_KEY:
+				case EVT::EV_RESIZE:
+				case EVT::EV_POP_CONTROLLER:
+				case EVT::EV_QUIT:
+					break;
+				}
 			}
-		} else {
-			switch (ev.code) {
-			case EVT::EV_SET_CONTROLLER:
-			case EVT::EV_PUSH_CONTROLLER:
-				controller_stack.push(std::get<std::shared_ptr<ScreenController>>(ev.data));
+		} catch (const std::exception &e) {
+			if (!controller_stack.empty()) {
+				controller_stack.top()->cleanup();
 				controller_stack.top()->init();
-				break;
-			case EVT::EV_KEY:
-			case EVT::EV_RESIZE:
-			case EVT::EV_POP_CONTROLLER:
-			case EVT::EV_QUIT:
-				break;
 			}
+
+			controller_stack.push(std::make_shared<ErrorScreen>(this, Point{2, 2}, e.what()));
 		}
 	}
 }

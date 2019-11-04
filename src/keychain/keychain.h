@@ -1,10 +1,18 @@
 #pragma once
 
+#include <src/crypto/crypto.h>
 #include <src/crypto/structs.h>
 #include <src/crypto/timed_encryption_key.h>
+#include <src/crypto/utils.h>
 
 #include <filesystem>
 #include <variant>
+
+namespace crypto {
+class Seed;
+class PasswordHash;
+struct DerivationPath;
+} // namespace crypto
 
 namespace leveldb {
 class DB;
@@ -14,14 +22,10 @@ class DB;
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
-struct DerivationPath {
-	int seed;
-};
-
 struct KeychainEntryMeta {
 	std::string name;
 	std::string details;
-	DerivationPath dpath;
+	crypto::DerivationPath dpath;
 };
 
 struct KeychainDirectoryMeta {
@@ -86,7 +90,14 @@ class Keychain {
 
 	std::string get_data_dir_path() const { return data_path.string(); }
 	KeychainDirectory::ptr get_root_dir() const;
+
+	crypto::DerivationPath get_next_derivation_path();
+
 	void save_entries(KeychainDirectory::ptr root);
+
+	static utils::sensitive_string encode_secret(
+	    unsigned char *in_data, size_t in_size, size_t out_size);
+	utils::sensitive_string derive_secret(const crypto::DerivationPath &dpath);
 
 	static std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root);
 };

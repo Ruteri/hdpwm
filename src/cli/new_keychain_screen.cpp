@@ -5,6 +5,7 @@
 #include <src/cli/input.h>
 #include <src/cli/keychain_main_screen.h>
 
+#include <src/crypto/crypto.h>
 #include <src/crypto/mnemonic.h>
 #include <src/crypto/utils.h>
 #include <src/keychain/keychain.h>

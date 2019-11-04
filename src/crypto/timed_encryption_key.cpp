@@ -9,25 +9,27 @@
 
 namespace crypto {
 
-void TimedEncryptionKey::encrypt(unsigned char *data_out, unsigned char *data_in, size_t data_len) {
+void TimedEncryptionKey::encrypt(
+    unsigned char *data_out, const unsigned char *data_in, size_t data_len) const {
 	assert(this->valid);
 
 	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
 	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
 
 	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(
-	    reinterpret_cast<CryptoPP::byte *>(this->ec.data()), PasswordHash::Size, iv);
+	    reinterpret_cast<const CryptoPP::byte *>(this->ec.data()), PasswordHash::Size, iv);
 	cfbEncryption.ProcessData(data_out, data_in, data_len);
 }
 
-void TimedEncryptionKey::decrypt(unsigned char *data_out, unsigned char *data_in, size_t data_len) {
+void TimedEncryptionKey::decrypt(
+    unsigned char *data_out, const unsigned char *data_in, size_t data_len) const {
 	assert(this->valid);
 
 	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
 	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
 
 	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(
-	    reinterpret_cast<CryptoPP::byte *>(this->ec.data()), PasswordHash::Size, iv);
+	    reinterpret_cast<const CryptoPP::byte *>(this->ec.data()), PasswordHash::Size, iv);
 	cfbDecryption.ProcessData(data_out, data_in, data_len);
 }
 

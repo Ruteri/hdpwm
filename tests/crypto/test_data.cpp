@@ -6,12 +6,13 @@
 
 struct mnemonic_data {
 	std::vector<std::string> mnemonic;
-	crypto::Seed::UnderlyingType expected_seed;
+	crypto::Seed expected_seed{};
 
 	mnemonic_data(std::string unparsed_mnemonic, std::string unparsed_seed) {
 		this->mnemonic = utils::split_string(unparsed_mnemonic);
-		auto bytev = utils::unhexify(unparsed_seed);
-		std::copy(bytev.begin(), bytev.end(), this->expected_seed.begin());
+		if (!unparsed_seed.empty()) {
+			expected_seed = crypto::deserialize<crypto::Seed>(unparsed_seed);
+		}
 	}
 };
 

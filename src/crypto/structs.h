@@ -3,12 +3,13 @@
 #include <src/crypto/utils.h>
 
 #include <array>
+#include <charconv>
 #include <cstdint>
 #include <stdexcept>
 
 namespace crypto {
 
-template <int S> struct ByteArray {
+template <int S, typename CV> struct ByteArray {
 	static constexpr size_t Size = S / 8;
 	using UnderlyingType = std::array<unsigned char, Size>;
 	UnderlyingType _data;
@@ -37,36 +38,21 @@ template <int S> struct ByteArray {
 	decltype(auto) end() { return this->_data.end(); }
 
 	decltype(auto) data() { return this->_data.data(); }
+	decltype(auto) data() const { return this->_data.data(); }
 	decltype(auto) size() const { return this->_data.size(); }
 
-	std::string serialize_to_string() const {
-		std::string rs;
-		rs.reserve(this->size());
-		for (unsigned char c : this->_data) {
-			rs.push_back((char)c);
-		}
-
-		return rs;
-	}
-
-	static ByteArray<S> deserialize_from_string(std::string str) {
-		if (str.size() != S) {
-			throw std::runtime_error(
-			    "invalid string passed to deserialization (length does not match)");
-		}
-
-		ByteArray<S> rarr;
-		for (int i = 0; i < S; ++i) {
-			rarr[i] = str[i];
-		}
-
-		return rarr;
-	}
+	decltype(auto) operator[](size_t index) { return this->_data[index]; }
+	decltype(auto) operator[](size_t index) const { return this->_data[index]; }
 };
 
-struct PasswordHash : ByteArray<256> {};
+struct PasswordHash : ByteArray<256, PasswordHash> {};
+struct ChildDerivationData : ByteArray<296, ChildDerivationData> {};
 
-struct Seed : ByteArray<512> {};
-struct EncryptedSeed : Seed {};
+struct Seed : ByteArray<512, Seed> {};
+struct EncryptedSeed : ByteArray<512, EncryptedSeed> {};
+
+template <typename AR> std::string serialize(const AR &data);
+
+template <typename RARR> RARR deserialize(const std::string &hexstr);
 
 } // namespace crypto

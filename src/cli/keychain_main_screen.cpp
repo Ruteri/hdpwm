@@ -189,7 +189,8 @@ void KeychainMainScreen::post_entry_form() {
 		}
 
 		// TODO(mmorusiewicz): generate entry using keychain
-		KeychainEntryMeta new_entry{entry_result->name, entry_result->details, {2}};
+		auto dpath = keychain->get_next_derivation_path();
+		KeychainEntryMeta new_entry{entry_result->name, entry_result->details, dpath};
 
 		std::visit(
 		    overloaded{
@@ -303,7 +304,7 @@ void KeychainMainScreen::post_entry_view(KeychainEntry::ptr entry) {
 
 	entry_view_form->add_label(Point{2, 0}, "Secret: ");
 	entry_view_form->add_output(std::make_unique<SensitiveOutputHandler>(
-	    Point{2, 8}, utils::sensitive_string("somesecret")));
+	    Point{2, 8}, keychain->derive_secret(entry->meta.dpath)));
 
 	entry_view_form->add_label(Point{3, 0}, "Details: " + entry->meta.details);
 

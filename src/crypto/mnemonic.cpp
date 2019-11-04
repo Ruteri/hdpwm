@@ -3,7 +3,6 @@
 #include <src/crypto/mnemonic-wordlist.cpp>
 #include <src/utils/utils.h>
 
-#include <external/cryptopp/modes.h>
 #include <external/cryptopp/osrng.h>
 #include <external/cryptopp/pwdbased.h>
 #include <external/cryptopp/sha.h>
@@ -13,44 +12,6 @@
 namespace crypto {
 
 constexpr int PBKDF2_ITERATION_COUNT = 2048;
-
-PasswordHash hash_password(const utils::sensitive_string &password) {
-	PasswordHash pw_hash;
-
-	CryptoPP::SHA256 sha;
-	sha.CalculateDigest(
-	    pw_hash.data(), reinterpret_cast<CryptoPP::byte *>(password.data), password.size());
-
-	return pw_hash;
-}
-
-EncryptedSeed encrypt_seed(Seed seed, PasswordHash password_hash) {
-	EncryptedSeed encrypted_seed;
-
-	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
-	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
-
-	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(
-	    reinterpret_cast<CryptoPP::byte *>(password_hash.data()), PasswordHash::Size, iv);
-	cfbEncryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(encrypted_seed.data()),
-	    reinterpret_cast<CryptoPP::byte *>(seed.data()), Seed::Size);
-
-	return encrypted_seed;
-}
-
-Seed decrypt_seed(EncryptedSeed encrypted_seed, PasswordHash password_hash) {
-	Seed seed;
-
-	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
-	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
-
-	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(
-	    reinterpret_cast<CryptoPP::byte *>(password_hash.data()), PasswordHash::Size, iv);
-	cfbDecryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(seed.data()),
-	    reinterpret_cast<CryptoPP::byte *>(encrypted_seed.data()), EncryptedSeed::Size);
-
-	return seed;
-}
 
 uint8_t extract_bit(const CryptoPP::byte *buffer, int cb) {
 	const CryptoPP::byte byte = buffer[cb / 8];
