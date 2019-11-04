@@ -20,11 +20,10 @@ class BasicMenu {
 	Point origin_pos;
 	std::vector<BasicMenuEntry> links;
 
-public:
+  public:
 	BasicMenu(std::vector<BasicMenuEntry> links, Point pos = {0, 0});
 
 	void draw();
 	void draw(WINDOW *scr);
 	void process_key(int key);
 };
-

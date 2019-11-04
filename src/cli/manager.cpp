@@ -4,9 +4,9 @@
 #include <curses.h>
 #include <signal.h>
 
+#include <chrono>
 #include <stack>
 #include <thread>
-#include <chrono>
 
 namespace {
 
@@ -16,7 +16,7 @@ void resizeHandler(int) {
 	if (g_manager) g_manager->on_resize();
 }
 
-}
+} // namespace
 
 WindowManager::WindowManager() {
 	initscr();
@@ -36,24 +36,18 @@ void WindowManager::push_event(WindowEvent ev) {
 }
 
 void WindowManager::set_controller(std::shared_ptr<ScreenController> new_controller) {
-	push_event({ EVT::EV_SET_CONTROLLER, { std::move(new_controller) } });
+	push_event({EVT::EV_SET_CONTROLLER, {std::move(new_controller)}});
 }
 
 void WindowManager::push_controller(std::shared_ptr<ScreenController> new_controller) {
-	push_event({ EVT::EV_PUSH_CONTROLLER, { std::move(new_controller) } });
+	push_event({EVT::EV_PUSH_CONTROLLER, {std::move(new_controller)}});
 }
 
-void WindowManager::pop_controller() {
-	push_event({ EVT::EV_POP_CONTROLLER, {} });
-}
+void WindowManager::pop_controller() { push_event({EVT::EV_POP_CONTROLLER, {}}); }
 
-void WindowManager::stop() {
-	push_event({ EVT::EV_QUIT, {} });
-}
+void WindowManager::stop() { push_event({EVT::EV_QUIT, {}}); }
 
-void WindowManager::on_resize() {
-	push_event({ EVT::EV_RESIZE, {} });
-}
+void WindowManager::on_resize() { push_event({EVT::EV_RESIZE, {}}); }
 
 void WindowManager::getch_loop() {
 	noecho();
@@ -61,7 +55,7 @@ void WindowManager::getch_loop() {
 	keypad(stdscr, TRUE);
 	nodelay(stdscr, TRUE);
 
-	for (;should_getch;) {
+	for (; should_getch;) {
 		int ch = getch();
 
 		if (ch == ERR) {
@@ -70,12 +64,12 @@ void WindowManager::getch_loop() {
 			continue;
 		}
 
-		push_event({ EVT::EV_KEY, { ch } });
+		push_event({EVT::EV_KEY, {ch}});
 	}
 }
 
 void WindowManager::run() {
-	auto getch_thread = std::thread([this](){ this->getch_loop(); });
+	auto getch_thread = std::thread([this]() { this->getch_loop(); });
 
 	std::stack<std::shared_ptr<ScreenController>> controller_stack;
 
@@ -89,14 +83,12 @@ void WindowManager::run() {
 
 		{
 			std::unique_lock<std::mutex> lk(ev_mutex);
-            while (ev_queue.empty())
-                ev_cv.wait(lk);
+			while (ev_queue.empty()) ev_cv.wait(lk);
 
-            if (ev_queue.empty())
-                continue;
+			if (ev_queue.empty()) continue;
 
-            ev = std::move(ev_queue.front());
-            ev_queue.pop();
+			ev = std::move(ev_queue.front());
+			ev_queue.pop();
 		}
 
 		if (current_controller) {
@@ -115,7 +107,8 @@ void WindowManager::run() {
 				break;
 			case EVT::EV_PUSH_CONTROLLER:
 				current_controller->cleanup();
-				controller_stack.push(std::move(std::get<std::shared_ptr<ScreenController>>(ev.data)));
+				controller_stack.push(
+				    std::move(std::get<std::shared_ptr<ScreenController>>(ev.data)));
 				current_controller = controller_stack.top();
 				current_controller->init();
 				break;

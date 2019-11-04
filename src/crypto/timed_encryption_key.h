@@ -9,9 +9,9 @@ class TimedEncryptionKey {
 	bool valid = false;
 	crypto::PasswordHash ec;
 
-public:
+  public:
 	TimedEncryptionKey() = default;
-	TimedEncryptionKey(crypto::PasswordHash&& pw): valid(true), ec(std::move(pw)) {}
+	TimedEncryptionKey(crypto::PasswordHash &&pw) : valid(true), ec(std::move(pw)) {}
 
 	bool is_valid() const { return this->valid; }
 

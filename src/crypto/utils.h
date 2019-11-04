@@ -10,14 +10,14 @@ struct sensitive_string {
 	char *data = new char[256];
 
 	sensitive_string();
-	sensitive_string(sensitive_string&&);
-	sensitive_string(const sensitive_string&) = delete;
+	sensitive_string(sensitive_string &&);
+	sensitive_string(const sensitive_string &) = delete;
 
-	sensitive_string& operator=(sensitive_string&&);
-	sensitive_string& operator=(const sensitive_string&) = delete;
+	sensitive_string &operator=(sensitive_string &&);
+	sensitive_string &operator=(const sensitive_string &) = delete;
 
-	explicit sensitive_string(const std::string&);
-	explicit sensitive_string(std::string&&);
+	explicit sensitive_string(const std::string &);
+	explicit sensitive_string(std::string &&);
 
 	~sensitive_string();
 
@@ -30,6 +30,6 @@ struct sensitive_string {
 };
 
 void secure_zero(void *s, size_t n);
-void secure_zero_string(std::string& s);
+void secure_zero_string(std::string &s);
 
 } // namespace utils

@@ -8,35 +8,30 @@
 
 namespace crypto {
 
-template <int S>
-struct ByteArray {
-	static constexpr size_t Size = S/8;
+template <int S> struct ByteArray {
+	static constexpr size_t Size = S / 8;
 	using UnderlyingType = std::array<unsigned char, Size>;
 	UnderlyingType _data;
 
 	ByteArray() = default;
 	// ~ByteArray() {}
 
-	ByteArray(UnderlyingType&& other): _data(std::move(other)) {}
+	ByteArray(UnderlyingType &&other) : _data(std::move(other)) {}
 
-	ByteArray(const ByteArray& other): _data(other._data) {}
-	ByteArray(ByteArray&& other) {
-		this->_data = std::move(other._data);
-	}
+	ByteArray(const ByteArray &other) : _data(other._data) {}
+	ByteArray(ByteArray &&other) { this->_data = std::move(other._data); }
 
-	ByteArray& operator=(const ByteArray&& other) {
+	ByteArray &operator=(const ByteArray &&other) {
 		this->_data = other._data;
 		return *this;
 	}
 
-	ByteArray& operator=(ByteArray&& other) {
+	ByteArray &operator=(ByteArray &&other) {
 		this->_data = std::move(other._data);
 		return *this;
 	}
 
-	bool operator==(const ByteArray& other) const {
-		return this->_data == other._data;
-	}
+	bool operator==(const ByteArray &other) const { return this->_data == other._data; }
 
 	decltype(auto) begin() { return this->_data.begin(); }
 	decltype(auto) end() { return this->_data.end(); }
@@ -48,7 +43,7 @@ struct ByteArray {
 		std::string rs;
 		rs.reserve(this->size());
 		for (unsigned char c : this->_data) {
-			rs.push_back((char) c);
+			rs.push_back((char)c);
 		}
 
 		return rs;
@@ -56,7 +51,8 @@ struct ByteArray {
 
 	static ByteArray<S> deserialize_from_string(std::string str) {
 		if (str.size() != S) {
-			throw std::runtime_error("invalid string passed to deserialization (length does not match)");
+			throw std::runtime_error(
+			    "invalid string passed to deserialization (length does not match)");
 		}
 
 		ByteArray<S> rarr;
@@ -68,9 +64,9 @@ struct ByteArray {
 	}
 };
 
-struct PasswordHash: ByteArray<256> {};
+struct PasswordHash : ByteArray<256> {};
 
-struct Seed: ByteArray<512> {};
-struct EncryptedSeed: Seed {};
+struct Seed : ByteArray<512> {};
+struct EncryptedSeed : Seed {};
 
 } // namespace crypto

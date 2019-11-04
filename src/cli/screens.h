@@ -14,57 +14,59 @@
 #include <memory>
 
 class ScreenController {
-private:
+  private:
 	virtual void m_init() {}
 	virtual void m_cleanup() {}
 	virtual void m_draw() = 0;
-	virtual void m_on_resize() { this->cleanup(); this->init(); this->draw(); }
+	virtual void m_on_resize() {
+		this->cleanup();
+		this->init();
+		this->draw();
+	}
 
-	/* TODO: return whether input was processed and should not propagate until top level controller */
+	/* TODO: return whether input was processed and should not propagate until top level controller
+	 */
 	virtual void m_on_key(int key) = 0;
 
-protected:
+  protected:
 	WindowManager *wmanager;
 
-public:
-	ScreenController(WindowManager *wmanager): wmanager(wmanager) {}
+  public:
+	ScreenController(WindowManager *wmanager) : wmanager(wmanager) {}
 	virtual ~ScreenController() { cleanup(); }
 
 	void init() { this->m_init(); }
 	void cleanup() { this->m_cleanup(); }
 	void draw() { this->m_draw(); }
 
-	void on_resize() {
-		this->m_on_resize();
-	}
+	void on_resize() { this->m_on_resize(); }
 
-	void on_key(int key) {
-		this->m_on_key(key);
-	}
+	void on_key(int key) { this->m_on_key(key); }
 };
 
-class StartScreen: public ScreenController {
+class StartScreen : public ScreenController {
 	std::unique_ptr<BasicMenu> start_screen_menu;
 
 	void m_draw() override;
 	void m_on_key(int key) override;
 
-public:
+  public:
 	StartScreen(WindowManager *wmanager);
 };
 
-class ErrorScreen: public ScreenController {
+class ErrorScreen : public ScreenController {
 	Point origin;
 	std::string msg;
 
 	void m_draw() override;
 	void m_on_key(int) override;
 
-public:
-	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg): ScreenController(wmanager), origin(origin), msg(std::move(msg)) {}
+  public:
+	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg) :
+	    ScreenController(wmanager), origin(origin), msg(std::move(msg)) {}
 };
 
-class FormController: public ScreenController {
+class FormController : public ScreenController {
 	// non-top level? (or w/ parent)
 	ScreenController *parent;
 	WINDOW *&window;
@@ -76,36 +78,44 @@ class FormController: public ScreenController {
 
 	size_t current_input = 0;
 	// TODO: use unique_ptr
-	std::vector<InputHandler*> fields = {};
+	std::vector<InputHandler *> fields = {};
 
 	/* parent has to maintain window and it's pointer */
 	int m_cursor_prev_state;
-	virtual void m_init() { parent->init(); curs_set(2); }
-	virtual void m_cleanup() { parent->cleanup(); curs_set(m_cursor_prev_state); }
+	virtual void m_init() {
+		parent->init();
+		curs_set(2);
+	}
+	virtual void m_cleanup() {
+		parent->cleanup();
+		curs_set(m_cursor_prev_state);
+	}
 
 	void m_draw() override;
 	void m_on_key(int key) override;
 
 	void advance_form();
 
-public:
-	FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window, std::function<void()> on_done);
+  public:
+	FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
+	    std::function<void()> on_done);
 
 	template <typename InputType>
-	void add_field(std::string title, std::function<bool(typename InputType::UValue&)> on_accept) {
-		Point origin{2 + (int) ( fields.size() + labels.size() ) * 3, 5};
-		fields.push_back(new InputType(std::move(origin), std::move(title),
-			[this, on_accept](typename InputType::UValue& v) {
-				if (on_accept(v)) advance_form();
-				else {}
-			})
-		);
+	void add_field(std::string title, std::function<bool(typename InputType::UValue &)> on_accept) {
+		Point origin{2 + (int)(fields.size() + labels.size()) * 3, 5};
+		fields.push_back(new InputType(
+		    std::move(origin), std::move(title), [this, on_accept](typename InputType::UValue &v) {
+			    if (on_accept(v))
+				    advance_form();
+			    else {
+			    }
+		    }));
 	}
 
 	void add_label(std::string);
 };
 
-class NewKeychainScreen: public ScreenController {
+class NewKeychainScreen : public ScreenController {
 	WINDOW *window;
 	void post_import_form();
 	std::shared_ptr<FormController> m_form_controller;
@@ -114,11 +124,11 @@ class NewKeychainScreen: public ScreenController {
 	void m_draw() override;
 	void m_on_key(int key) override;
 
-public:
+  public:
 	NewKeychainScreen(WindowManager *wmanager);
 };
 
-class ImportKeychainScreen: public ScreenController {
+class ImportKeychainScreen : public ScreenController {
 	WINDOW *window;
 	void post_import_form();
 	std::shared_ptr<FormController> m_form_controller;
@@ -127,7 +137,7 @@ class ImportKeychainScreen: public ScreenController {
 	void m_draw() override;
 	void m_on_key(int key) override;
 
-public:
+  public:
 	ImportKeychainScreen(WindowManager *wmanager);
 };
 
@@ -137,8 +147,9 @@ struct KeychainEntryNode {
 	std::string title;
 	std::string details;
 
-	KeychainDirectoryNode* parent_dir;
-	KeychainEntryNode(const KeychainEntry &entry, KeychainDirectoryNode* parent_dir): title(entry.title), details(entry.details), parent_dir(parent_dir) {}
+	KeychainDirectoryNode *parent_dir;
+	KeychainEntryNode(const KeychainEntry &entry, KeychainDirectoryNode *parent_dir) :
+	    title(entry.title), details(entry.details), parent_dir(parent_dir) {}
 };
 
 struct KeychainDirectoryNode {
@@ -154,10 +165,10 @@ struct KeychainDirectoryNode {
 	KeychainDirectoryNode(const KeychainDirectory &d, KeychainDirectoryNode *parent);
 };
 
-class KeychainMainScreen: public ScreenController {
+class KeychainMainScreen : public ScreenController {
 	std::unique_ptr<Keychain> keychain;
 	KeychainDirectoryNode *keychain_root_dir;
-	std::vector<std::variant<KeychainDirectoryNode*, KeychainEntryNode*>> flat_entries_cache;
+	std::vector<std::variant<KeychainDirectoryNode *, KeychainEntryNode *>> flat_entries_cache;
 	int c_selected_index = 0;
 
 	int maxlines, maxcols;
@@ -174,7 +185,7 @@ class KeychainMainScreen: public ScreenController {
 	void m_draw() override;
 	void m_on_key(int key) override;
 
-public:
-	KeychainMainScreen(WindowManager*, std::unique_ptr<Keychain>);
+  public:
+	KeychainMainScreen(WindowManager *, std::unique_ptr<Keychain>);
 	~KeychainMainScreen();
 };

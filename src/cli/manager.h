@@ -3,12 +3,19 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <variant>
 #include <queue>
+#include <variant>
 
 class ScreenController;
 
-enum class EVT { EV_KEY, EV_RESIZE, EV_SET_CONTROLLER, EV_PUSH_CONTROLLER, EV_POP_CONTROLLER, EV_QUIT };
+enum class EVT {
+	EV_KEY,
+	EV_RESIZE,
+	EV_SET_CONTROLLER,
+	EV_PUSH_CONTROLLER,
+	EV_POP_CONTROLLER,
+	EV_QUIT
+};
 
 struct WindowEvent {
 	EVT code;
@@ -16,8 +23,8 @@ struct WindowEvent {
 };
 
 class WindowManager {
-    std::mutex ev_mutex;
-    std::condition_variable ev_cv;
+	std::mutex ev_mutex;
+	std::condition_variable ev_cv;
 	std::queue<WindowEvent> ev_queue;
 
 	bool should_getch = true;
@@ -25,7 +32,7 @@ class WindowManager {
 
 	void push_event(WindowEvent ev);
 
-public:
+  public:
 	WindowManager();
 	~WindowManager();
 

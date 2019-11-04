@@ -2,9 +2,7 @@
 
 #include <curses.h>
 
-void OutputHandler::draw() {
-	draw(stdscr);
-}
+void OutputHandler::draw() { draw(stdscr); }
 
 void OutputHandler::draw(WINDOW *window) {
 	wmove(window, origin.row, origin.col);

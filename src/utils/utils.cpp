@@ -1,22 +1,22 @@
 #include <src/utils/utils.h>
 
-#include <sstream>
-#include <iterator>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <sstream>
 
 namespace utils {
 
 std::vector<std::string> split_string(std::string str) {
 	std::istringstream str_iss(str);
-	std::vector<std::string> split_str((std::istream_iterator<std::string>(str_iss)),
-							 std::istream_iterator<std::string>());
+	std::vector<std::string> split_str(
+	    (std::istream_iterator<std::string>(str_iss)), std::istream_iterator<std::string>());
 	return split_str;
 }
 
 std::vector<unsigned char> unhexify(std::string hexstr) {
 	std::vector<unsigned char> rv;
-	rv.reserve(hexstr.size()/2);
+	rv.reserve(hexstr.size() / 2);
 	for (unsigned int i = 0; i + 1 < hexstr.size(); i += 2) {
 		std::istringstream strm(hexstr.substr(i, 2));
 		int v;

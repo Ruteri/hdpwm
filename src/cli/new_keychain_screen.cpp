@@ -9,8 +9,8 @@
 
 #include <filesystem>
 #include <memory>
-#include <string>
 #include <optional>
+#include <string>
 #include <vector>
 
 struct DBInputResult {
@@ -22,18 +22,18 @@ struct ValidationResult {
 	bool valid;
 	std::string reason;
 
-	ValidationResult(bool valid = true): valid(valid), reason("") {}
-	ValidationResult(const char *reason): valid(false), reason(reason) {}
-	ValidationResult(std::string reason): valid(false), reason(reason) {}
+	ValidationResult(bool valid = true) : valid(valid), reason("") {}
+	ValidationResult(const char *reason) : valid(false), reason(reason) {}
+	ValidationResult(std::string reason) : valid(false), reason(reason) {}
 
 	operator bool() const { return valid; }
 };
 
 ValidationResult validate_new_kc_path(std::filesystem::path &path) {
 	if (std::filesystem::exists(path)) {
-		return { "This file already exists, refusing to delete it." };
+		return {"This file already exists, refusing to delete it."};
 	} else if (!std::filesystem::is_directory(path.parent_path())) {
-		return { "The parent directory does not exist, create it first." };
+		return {"The parent directory does not exist, create it first."};
 	}
 
 	return {};
@@ -41,13 +41,14 @@ ValidationResult validate_new_kc_path(std::filesystem::path &path) {
 
 ValidationResult validate_import_kc_path(std::filesystem::path &path) {
 	if (!std::filesystem::is_directory(path)) {
-		return { "Path seems invalid, refusing to import it." };
+		return {"Path seems invalid, refusing to import it."};
 	}
 
 	return {};
 }
 
-std::filesystem::path expand_path(const std::string& input_value, const std::string& default_value) {
+std::filesystem::path expand_path(
+    const std::string &input_value, const std::string &default_value) {
 	std::string path_value = input_value.empty() ? default_value : input_value;
 
 	if (path_value.size() > 0 && path_value.substr(0, 1) == "~") {
@@ -57,7 +58,7 @@ std::filesystem::path expand_path(const std::string& input_value, const std::str
 	}
 }
 
-class GenerateKeychainScreen: public ScreenController {
+class GenerateKeychainScreen : public ScreenController {
 	std::filesystem::path db_path;
 	crypto::PasswordHash pw_hash;
 	crypto::Seed seed;
@@ -70,12 +71,17 @@ class GenerateKeychainScreen: public ScreenController {
 	}
 
 	void m_on_key(int) override {
-		auto keychain = Keychain::initialize_with_seed(this->db_path, std::move(this->seed), std::move(this->pw_hash));
-		this->wmanager->set_controller(std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
+		auto keychain = Keychain::initialize_with_seed(
+		    this->db_path, std::move(this->seed), std::move(this->pw_hash));
+		this->wmanager->set_controller(
+		    std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
 	}
 
-public:
-	GenerateKeychainScreen(WindowManager *wmanager, std::filesystem::path db_path, crypto::PasswordHash pw_hash): ScreenController(wmanager), db_path(std::move(db_path)), pw_hash(std::move(pw_hash)) {
+  public:
+	GenerateKeychainScreen(
+	    WindowManager *wmanager, std::filesystem::path db_path, crypto::PasswordHash pw_hash) :
+	    ScreenController(wmanager),
+	    db_path(std::move(db_path)), pw_hash(std::move(pw_hash)) {
 		std::vector<std::string> mnemonic = crypto::generate_mnemonic(24);
 
 		// TODO: should clear memory after use
@@ -89,12 +95,14 @@ public:
 
 		seed = crypto::mnemonic_to_seed(std::move(mnemonic));
 
-		outputs.push_back(std::make_unique<OutputHandler>(Point{3, 5}, "Please write down the following mnemonic and press any key to continue."));
+		outputs.push_back(std::make_unique<OutputHandler>(Point{3, 5},
+		    "Please write down the following mnemonic and press any key to continue."));
 		outputs.push_back(std::make_unique<OutputHandler>(Point{4, 5}, combined_mnemonic));
 	}
 };
 
-NewKeychainScreen::NewKeychainScreen(WindowManager *wmanager): ScreenController(wmanager), window(stdscr) {}
+NewKeychainScreen::NewKeychainScreen(WindowManager *wmanager) :
+    ScreenController(wmanager), window(stdscr) {}
 
 void NewKeychainScreen::m_init() {
 	if (!m_form_controller) post_import_form();
@@ -107,10 +115,12 @@ void NewKeychainScreen::post_import_form() {
 		this->wmanager->pop_controller();
 		m_form_controller->cleanup();
 		try {
-			this->wmanager->set_controller(std::make_shared<GenerateKeychainScreen>(wmanager, std::move(result->db_path.value()), std::move(result->pw_hash.value())));
+			this->wmanager->set_controller(std::make_shared<GenerateKeychainScreen>(
+			    wmanager, std::move(result->db_path.value()), std::move(result->pw_hash.value())));
 
-		} catch(const std::exception& e) {
-			this->wmanager->set_controller(std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
+		} catch (const std::exception &e) {
+			this->wmanager->set_controller(
+			    std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
 		}
 	};
 
@@ -121,12 +131,13 @@ void NewKeychainScreen::post_import_form() {
 		return validate_new_kc_path(result->db_path.value()).valid;
 	};
 
-	auto on_accept_pw = [result](utils::sensitive_string& pw) -> bool {
+	auto on_accept_pw = [result](utils::sensitive_string &pw) -> bool {
 		result->pw_hash = crypto::hash_password(pw);
 		return true;
 	};
 
-	m_form_controller->add_field<StringInputHandler>("Database path (max. 256 chars) [~/.hdpwm]: ", on_accept_path);
+	m_form_controller->add_field<StringInputHandler>(
+	    "Database path (max. 256 chars) [~/.hdpwm]: ", on_accept_path);
 	m_form_controller->add_field<SensitiveInputHandler>("Keychain master password: ", on_accept_pw);
 
 	wmanager->push_controller(m_form_controller);
@@ -142,8 +153,8 @@ void NewKeychainScreen::m_draw() {
 
 void NewKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }
 
-
-ImportKeychainScreen::ImportKeychainScreen(WindowManager *wmanager): ScreenController(wmanager), window(stdscr) {}
+ImportKeychainScreen::ImportKeychainScreen(WindowManager *wmanager) :
+    ScreenController(wmanager), window(stdscr) {}
 
 void ImportKeychainScreen::m_init() {
 	if (!m_form_controller) post_import_form();
@@ -157,9 +168,11 @@ void ImportKeychainScreen::post_import_form() {
 		m_form_controller->cleanup();
 		try {
 			auto keychain = Keychain::open(result->db_path.value(), result->pw_hash.value());
-			this->wmanager->set_controller(std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
-		} catch(const std::exception& e) {
-			this->wmanager->set_controller(std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
+			this->wmanager->set_controller(
+			    std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
+		} catch (const std::exception &e) {
+			this->wmanager->set_controller(
+			    std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
 		}
 	};
 
@@ -170,12 +183,13 @@ void ImportKeychainScreen::post_import_form() {
 		return validate_import_kc_path(result->db_path.value()).valid;
 	};
 
-	auto on_accept_pw = [result](utils::sensitive_string& pw) -> bool {
+	auto on_accept_pw = [result](utils::sensitive_string &pw) -> bool {
 		result->pw_hash = crypto::hash_password(pw);
 		return true;
 	};
 
-	m_form_controller->add_field<StringInputHandler>("Database path (max. 256 chars) [~/.hdpwm]: ", on_accept_path);
+	m_form_controller->add_field<StringInputHandler>(
+	    "Database path (max. 256 chars) [~/.hdpwm]: ", on_accept_path);
 	m_form_controller->add_field<SensitiveInputHandler>("Keychain master password: ", on_accept_pw);
 
 	wmanager->push_controller(m_form_controller);

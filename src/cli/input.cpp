@@ -2,13 +2,12 @@
 
 #include <curses.h>
 
-void InputHandler::draw() {
-	this->draw(stdscr);
-}
+void InputHandler::draw() { this->draw(stdscr); }
 
 void InputHandler::process_key(int key) {
 	switch (key) {
-	case KEY_ENTER: case KEY_RETURN:
+	case KEY_ENTER:
+	case KEY_RETURN:
 		return on_accept();
 	case KEY_BACKSPACE:
 		this->on_backspace();
@@ -21,15 +20,16 @@ void InputHandler::process_key(int key) {
 	}
 }
 
-StringInputHandler::StringInputHandler(const Point& origin, const std::string& title, ValueCallback on_accept): InputHandlerCallback<std::string>(std::move(on_accept)), origin(origin), title(title) {}
+StringInputHandler::StringInputHandler(
+    const Point &origin, const std::string &title, ValueCallback on_accept) :
+    InputHandlerCallback<std::string>(std::move(on_accept)),
+    origin(origin), title(title) {}
 
 void StringInputHandler::on_backspace() {
 	if (this->value.length() > 0) this->value.pop_back();
 }
 
-void StringInputHandler::on_char(char c) {
-	this->value.push_back(c);
-}
+void StringInputHandler::on_char(char c) { this->value.push_back(c); }
 
 void StringInputHandler::draw(WINDOW *window) {
 	wmove(window, this->origin.row, 0);
@@ -39,15 +39,16 @@ void StringInputHandler::draw(WINDOW *window) {
 	waddstr(window, this->value.c_str());
 }
 
-SensitiveInputHandler::SensitiveInputHandler(const Point& origin, const std::string& title, ValueCallback on_accept): InputHandlerCallback<utils::sensitive_string>(std::move(on_accept)), origin(origin), title(title) {}
+SensitiveInputHandler::SensitiveInputHandler(
+    const Point &origin, const std::string &title, ValueCallback on_accept) :
+    InputHandlerCallback<utils::sensitive_string>(std::move(on_accept)),
+    origin(origin), title(title) {}
 
 void SensitiveInputHandler::on_backspace() {
 	if (this->value.size() > 0) this->value.pop_back();
 }
 
-void SensitiveInputHandler::on_char(char c) {
-	this->value.push_back(c);
-}
+void SensitiveInputHandler::on_char(char c) { this->value.push_back(c); }
 
 void SensitiveInputHandler::draw(WINDOW *window) {
 	wmove(window, this->origin.row, 0);

@@ -1,6 +1,9 @@
 #include <src/cli/screens.h>
 
-FormController::FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window, std::function<void()> on_done): ScreenController(wmanager), parent(parent), window(window), on_done(on_done) {
+FormController::FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
+    std::function<void()> on_done) :
+    ScreenController(wmanager),
+    parent(parent), window(window), on_done(on_done) {
 	m_cursor_prev_state = curs_set(2);
 }
 
@@ -9,7 +12,7 @@ void FormController::m_draw() {
 		output->draw(window);
 	}
 
-	int cx=0, cy=0;
+	int cx = 0, cy = 0;
 	for (size_t i = 0; i < fields.size(); ++i) {
 		fields[i]->draw(window);
 		if (i == current_input) getyx(window, cx, cy);
@@ -24,7 +27,8 @@ void FormController::m_draw() {
 
 void FormController::m_on_key(int key) {
 	switch (state) {
-	case State::IGNORING: case State::DONE:
+	case State::IGNORING:
+	case State::DONE:
 		parent->on_key(key);
 		break;
 	case State::PROCESSING:
@@ -33,7 +37,8 @@ void FormController::m_on_key(int key) {
 		case KEY_UP:
 			current_input = current_input <= 0 ? 0 : current_input - 1;
 			break;
-		case KEY_DOWN: case '\t':
+		case KEY_DOWN:
+		case '\t':
 			fields[current_input]->process_key(KEY_ENTER);
 			break;
 		default:
@@ -45,12 +50,12 @@ void FormController::m_on_key(int key) {
 
 void FormController::advance_form() {
 	if (++current_input >= fields.size()) {
-		state= State::DONE;
+		state = State::DONE;
 		on_done();
 	}
 }
 
 void FormController::add_label(std::string text) {
-	Point origin{2 + static_cast<int>( fields.size() + labels.size() ) * 3, 5};
+	Point origin{2 + static_cast<int>(fields.size() + labels.size()) * 3, 5};
 	labels.push_back(std::make_unique<OutputHandler>(std::move(origin), std::move(text)));
 }

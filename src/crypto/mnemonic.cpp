@@ -14,11 +14,12 @@ namespace crypto {
 
 constexpr int PBKDF2_ITERATION_COUNT = 2048;
 
-PasswordHash hash_password(const utils::sensitive_string& password) {
+PasswordHash hash_password(const utils::sensitive_string &password) {
 	PasswordHash pw_hash;
 
 	CryptoPP::SHA256 sha;
-	sha.CalculateDigest(pw_hash.data(), reinterpret_cast<CryptoPP::byte*>(password.data), password.size());
+	sha.CalculateDigest(
+	    pw_hash.data(), reinterpret_cast<CryptoPP::byte *>(password.data), password.size());
 
 	return pw_hash;
 }
@@ -26,13 +27,13 @@ PasswordHash hash_password(const utils::sensitive_string& password) {
 EncryptedSeed encrypt_seed(Seed seed, PasswordHash password_hash) {
 	EncryptedSeed encrypted_seed;
 
-	CryptoPP::byte iv[ CryptoPP::AES::BLOCKSIZE ];
-	memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
+	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
 
-	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(reinterpret_cast<CryptoPP::byte*>( password_hash.data() ), PasswordHash::Size, iv);
-	cfbEncryption.ProcessData(
-	    reinterpret_cast<CryptoPP::byte*>(encrypted_seed.data()),
-	    reinterpret_cast<CryptoPP::byte*>(seed.data()), Seed::Size);
+	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(
+	    reinterpret_cast<CryptoPP::byte *>(password_hash.data()), PasswordHash::Size, iv);
+	cfbEncryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(encrypted_seed.data()),
+	    reinterpret_cast<CryptoPP::byte *>(seed.data()), Seed::Size);
 
 	return encrypted_seed;
 }
@@ -40,26 +41,24 @@ EncryptedSeed encrypt_seed(Seed seed, PasswordHash password_hash) {
 Seed decrypt_seed(EncryptedSeed encrypted_seed, PasswordHash password_hash) {
 	Seed seed;
 
-	CryptoPP::byte iv[ CryptoPP::AES::BLOCKSIZE ];
-	memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
+	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
 
-	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(reinterpret_cast<CryptoPP::byte*>( password_hash.data() ), PasswordHash::Size, iv);
-	cfbDecryption.ProcessData(
-	    reinterpret_cast<CryptoPP::byte*>(seed.data()),
-	    reinterpret_cast<CryptoPP::byte*>(encrypted_seed.data()), EncryptedSeed::Size);
+	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(
+	    reinterpret_cast<CryptoPP::byte *>(password_hash.data()), PasswordHash::Size, iv);
+	cfbDecryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(seed.data()),
+	    reinterpret_cast<CryptoPP::byte *>(encrypted_seed.data()), EncryptedSeed::Size);
 
 	return seed;
 }
 
 uint8_t extract_bit(const CryptoPP::byte *buffer, int cb) {
-	const CryptoPP::byte byte = buffer[cb/8];
+	const CryptoPP::byte byte = buffer[cb / 8];
 	const uint8_t mask = 1 << (7 - (cb % 8));
 	return byte & mask;
 }
 
-std::string word_at(int index) {
-	return mnemonic_dictionary[index % mnemonic_dictionary.size()];
-}
+std::string word_at(int index) { return mnemonic_dictionary[index % mnemonic_dictionary.size()]; }
 
 int find_word_index(std::string word) {
 	auto it = std::lower_bound(mnemonic_dictionary.begin(), mnemonic_dictionary.end(), word);
@@ -72,7 +71,7 @@ int find_word_index(std::string word) {
 
 std::vector<int> bitsplit_11(const CryptoPP::byte *buffer, int size) {
 	std::vector<int> rv;
-	rv.reserve(size/11);
+	rv.reserve(size / 11);
 	for (int sb = 0; sb <= size - 11; sb += 11) {
 		unsigned int v = 0;
 
@@ -145,7 +144,8 @@ Seed mnemonic_to_seed(std::vector<std::string> words) {
 	CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512> pbkdf;
 	CryptoPP::byte unused = 0;
 
-	pbkdf.DeriveKey(reinterpret_cast<CryptoPP::byte*>(seed.data()), CryptoPP::SHA512::DIGESTSIZE, unused, mnemonic, words_len, salt, sizeof(salt), PBKDF2_ITERATION_COUNT);
+	pbkdf.DeriveKey(reinterpret_cast<CryptoPP::byte *>(seed.data()), CryptoPP::SHA512::DIGESTSIZE,
+	    unused, mnemonic, words_len, salt, sizeof(salt), PBKDF2_ITERATION_COUNT);
 
 	delete[] mnemonic;
 	return seed;

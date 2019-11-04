@@ -6,14 +6,20 @@
 
 #include <vector>
 
-StartScreen::StartScreen(WindowManager *wmanager): ScreenController(wmanager) {
+StartScreen::StartScreen(WindowManager *wmanager) : ScreenController(wmanager) {
 	std::vector<BasicMenuEntry> start_screen_menu_entries = {
-		{ "Import keychain", [wmanager]() { wmanager->push_controller(std::make_shared<ImportKeychainScreen>(wmanager)); } },
-		{ "Create new keychain", [wmanager]() { wmanager->push_controller(std::make_shared<NewKeychainScreen>(wmanager)); } },
-		{ "Exit", [wmanager]() { wmanager->stop(); } },
+	    {"Import keychain",
+	        [wmanager]() {
+		        wmanager->push_controller(std::make_shared<ImportKeychainScreen>(wmanager));
+	        }},
+	    {"Create new keychain",
+	        [wmanager]() {
+		        wmanager->push_controller(std::make_shared<NewKeychainScreen>(wmanager));
+	        }},
+	    {"Exit", [wmanager]() { wmanager->stop(); }},
 	};
 
-	start_screen_menu.reset(new BasicMenu(std::move(start_screen_menu_entries), { 3, 5 }));
+	start_screen_menu.reset(new BasicMenu(std::move(start_screen_menu_entries), {3, 5}));
 }
 
 void StartScreen::m_draw() {
@@ -28,10 +34,11 @@ void StartScreen::m_draw() {
 }
 
 void StartScreen::m_on_key(int key) {
-	if (key == 'q') wmanager->stop();
-	else start_screen_menu->process_key(key);
+	if (key == 'q')
+		wmanager->stop();
+	else
+		start_screen_menu->process_key(key);
 }
-
 
 void ErrorScreen::m_draw() {
 	clear();
@@ -42,6 +49,4 @@ void ErrorScreen::m_draw() {
 	noecho();
 }
 
-void ErrorScreen::m_on_key(int) {
-	wmanager->pop_controller();
-}
+void ErrorScreen::m_on_key(int) { wmanager->pop_controller(); }
