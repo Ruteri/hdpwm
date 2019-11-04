@@ -64,7 +64,7 @@ std::string word_at(int index) {
 int find_word_index(std::string word) {
 	auto it = std::lower_bound(mnemonic_dictionary.begin(), mnemonic_dictionary.end(), word);
 	if (it == mnemonic_dictionary.end() || *it != word) {
-		throw new std::runtime_error("unknown word");
+		throw std::runtime_error("unknown word");
 	}
 
 	return it - mnemonic_dictionary.begin();

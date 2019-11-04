@@ -1,8 +1,10 @@
 #pragma once
 
+#include <src/cli/utils.h>
+
 #include <memory>
 
-#include <src/cli/utils.h>
+#include <src/keychain/keychain.h>
 
 class Screen {
 public:
@@ -25,7 +27,11 @@ public:
 };
 
 class KeychainMainScreen: public Screen {
+	Keychain keychain;
+
 public:
+	KeychainMainScreen(Keychain&&);
+
 	std::unique_ptr<Screen> run() override;
 };
 

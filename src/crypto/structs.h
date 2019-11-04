@@ -4,6 +4,7 @@
 
 #include <array>
 #include <cstdint>
+#include <stdexcept>
 
 namespace crypto {
 
@@ -31,11 +32,34 @@ struct MovableArray {
 		return this->_data == other._data;
 	}
 
-	decltype(auto) begin() { return _data.begin(); }
-	decltype(auto) end() { return _data.end(); }
+	decltype(auto) begin() { return this->_data.begin(); }
+	decltype(auto) end() { return this->_data.end(); }
 
-	decltype(auto) data() { return _data.data(); }
-	decltype(auto) size() { return _data.size(); }
+	decltype(auto) data() { return this->_data.data(); }
+	decltype(auto) size() const { return this->_data.size(); }
+
+	std::string serialize_to_string() const {
+		std::string rs;
+		rs.reserve(this->size());
+		for (unsigned char c : this->_data) {
+			rs.push_back((char) c);
+		}
+
+		return rs;
+	}
+
+	static MovableArray<S> deserialize_from_string(std::string str) {
+		if (str.size() != S) {
+			throw std::runtime_error("invalid string passed to deserialization (length does not match)");
+		}
+
+		MovableArray<S> rarr;
+		for (int i = 0; i < S; ++i) {
+			rarr[i] = str[i];
+		}
+
+		return rarr;
+	}
 };
 
 struct PasswordHash: MovableArray<256> {};

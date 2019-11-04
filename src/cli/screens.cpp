@@ -38,11 +38,3 @@ void show_error(const Point& pos, const std::string& msg) {
 	noecho();
 	getch();
 }
-
-std::unique_ptr<Screen> ImportKeychainScreen::run() {
-	return nullptr;
-}
-
-std::unique_ptr<Screen> KeychainMainScreen::run() {
-	return nullptr;
-}
