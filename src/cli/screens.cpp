@@ -33,25 +33,11 @@ void StartScreen::m_on_key(int key) {
 }
 
 
-NewEntryScreen::NewEntryScreen(WindowManager *wmanager, decltype(on_accept) on_accept, decltype(on_cancel) on_cancel): ScreenController(wmanager), on_accept(on_accept), on_cancel(on_cancel) {}
-
-void NewEntryScreen::m_draw() {
-	clear();
-	refresh();
-
-	// StringInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel);
-}
-
-void NewEntryScreen::m_on_key(int key) {
-	wmanager->pop_controller();
-}
-
-
 void ErrorScreen::m_draw() {
-	move(origin.row, 0);
 	clear();
-	mvaddstr(origin.row, origin.col, msg.c_str());
-	addstr(" Press any key to continue.");
+	mvaddstr(origin.row, origin.col, "Encountered the following error:");
+	mvaddstr(origin.row + 1, origin.col + 2, msg.c_str());
+	mvaddstr(origin.row + 2, origin.col, "Press any key to continue.");
 	// set cursor 0
 	noecho();
 }

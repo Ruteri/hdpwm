@@ -2,6 +2,15 @@
 
 #include <list>
 
+struct EntryFormResult {
+	std::string name;
+	std::string details;
+};
+
+struct DirectoryFormResult {
+	std::string name;
+};
+
 // helper for visitors
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
@@ -91,7 +100,7 @@ void KeychainMainScreen::m_init() {
 	/* footer */
 
 	this->footer = newwin(1, this->maxcols / 5 * 4, this->maxlines - 1, 0);
-	mvwaddstr(this->footer, 0, 0, "<up & down arrows> to navigate | <n> to add new entry | <return> to view & edit | <q> to quit");
+	mvwaddstr(this->footer, 0, 0, "<up & down arrows> to navigate | <n> to add new entry | <N> to add new group | <return> to view & edit | <q> to quit");
 
 	wrefresh(this->footer);
 }
@@ -179,10 +188,95 @@ void KeychainMainScreen::m_on_key(int key) {
 		}, flat_entries_cache[this->c_selected_index]);
 		break;
 	case 'n':
-		wmanager->push_controller(std::make_shared<NewEntryScreen>(wmanager, [](KeychainEntry){}, [](){}));
+		post_entry_form();
+		break;
+	case 'N':
+		post_directory_form();
 		break;
 	case 'q':
 		wmanager->pop_controller();
 		break;
 	}
+}
+
+void KeychainMainScreen::post_entry_form() {
+	std::shared_ptr<EntryFormResult> entry_result = std::make_shared<EntryFormResult>();
+
+	auto on_form_done = [this, entry_result]() {
+		this->wmanager->pop_controller();
+		m_entry_form_controller.reset();
+
+		if (!entry_result || entry_result->name.empty()) {
+			this->wmanager->set_controller(std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, "Invalid form returned"));
+		}
+
+		// TODO: generate entry using keychain
+		KeychainEntry new_entry{entry_result->name, entry_result->details};
+
+		std::visit(overloaded {
+		[this, &new_entry](KeychainDirectoryNode* dir) {
+			dir->is_open = true;
+			dir->entries.push_back({new_entry, dir});
+		},
+		[this, &new_entry](KeychainEntryNode* entry) {
+			entry->parent_dir->entries.push_back({new_entry, entry->parent_dir});
+		},
+		}, flat_entries_cache[this->c_selected_index]);
+		flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+	};
+
+	m_entry_form_controller = std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
+
+	auto on_name_accept = [entry_result](std::string &name) -> bool {
+		entry_result->name = name;
+		return !name.empty();
+	};
+
+	auto on_details_accept = [entry_result](std::string &details) -> bool {
+		entry_result->details = details;
+		return true;
+	};
+
+	m_entry_form_controller->add_field<StringInputHandler>("Entry name: ", on_name_accept);
+	m_entry_form_controller->add_field<StringInputHandler>("Details: ", on_details_accept);
+
+	wmanager->push_controller(m_entry_form_controller);
+}
+
+void KeychainMainScreen::post_directory_form() {
+	std::shared_ptr<DirectoryFormResult> dir_result = std::make_shared<DirectoryFormResult>();
+
+	auto on_form_done = [this, dir_result]() {
+		this->wmanager->pop_controller();
+		m_directory_form_controller.reset();
+
+		if (!dir_result || dir_result->name.empty()) {
+			this->wmanager->set_controller(std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, "Invalid form returned"));
+		}
+
+		// TODO: generate entry using keychain
+		KeychainDirectory new_dir{dir_result->name, {}, {}};
+
+		std::visit(overloaded {
+		[this, &new_dir](KeychainDirectoryNode* dir) {
+			dir->is_open = true;
+			dir->dirs.push_back({new_dir, dir});
+		},
+		[this, &new_dir](KeychainEntryNode* entry) {
+			entry->parent_dir->dirs.push_back({new_dir, entry->parent_dir});
+		},
+		}, flat_entries_cache[this->c_selected_index]);
+		flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+	};
+
+	m_directory_form_controller = std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
+
+	auto on_name_accept = [dir_result](std::string &name) -> bool {
+		dir_result->name = name;
+		return !name.empty();
+	};
+
+	m_directory_form_controller->add_field<StringInputHandler>("Directory name: ", on_name_accept);
+
+	wmanager->push_controller(m_directory_form_controller);
 }

@@ -72,7 +72,10 @@ class FormController: public ScreenController {
 
 	enum class State { PROCESSING, IGNORING, DONE } state = State::PROCESSING;
 
+	std::vector<std::unique_ptr<OutputHandler>> labels = {};
+
 	size_t current_input = 0;
+	// TODO: use unique_ptr
 	std::vector<InputHandler*> fields = {};
 
 	/* parent has to maintain window and it's pointer */
@@ -90,21 +93,22 @@ public:
 
 	template <typename InputType>
 	void add_field(std::string title, std::function<bool(typename InputType::UValue&)> on_accept) {
-		fields.push_back(new InputType(Point{2 + (int) fields.size() * 3, 5}, title,
+		Point origin{2 + (int) ( fields.size() + labels.size() ) * 3, 5};
+		fields.push_back(new InputType(std::move(origin), std::move(title),
 			[this, on_accept](typename InputType::UValue& v) {
 				if (on_accept(v)) advance_form();
 				else {}
 			})
 		);
 	}
+
+	void add_label(std::string);
 };
 
 class NewKeychainScreen: public ScreenController {
 	WINDOW *window;
+	void post_import_form();
 	std::shared_ptr<FormController> m_form_controller;
-
-	std::optional<std::filesystem::path> db_path;
-	std::optional<crypto::PasswordHash> pw_hash;
 
 	void m_init() override;
 	void m_draw() override;
@@ -116,10 +120,8 @@ public:
 
 class ImportKeychainScreen: public ScreenController {
 	WINDOW *window;
+	void post_import_form();
 	std::shared_ptr<FormController> m_form_controller;
-
-	std::optional<std::filesystem::path> db_path;
-	std::optional<crypto::PasswordHash> pw_hash;
 
 	void m_init() override;
 	void m_draw() override;
@@ -161,6 +163,12 @@ class KeychainMainScreen: public ScreenController {
 	int maxlines, maxcols;
 	WINDOW *header, *main, *details, *footer;
 
+	std::shared_ptr<FormController> m_entry_form_controller{};
+	void post_entry_form();
+
+	std::shared_ptr<FormController> m_directory_form_controller{};
+	void post_directory_form();
+
 	void m_init() override;
 	void m_cleanup() override;
 	void m_draw() override;
@@ -169,15 +177,4 @@ class KeychainMainScreen: public ScreenController {
 public:
 	KeychainMainScreen(WindowManager*, std::unique_ptr<Keychain>);
 	~KeychainMainScreen();
-};
-
-class NewEntryScreen: public ScreenController {
-	std::function<void(KeychainEntry)> on_accept;
-	std::function<void()> on_cancel;
-
-	void m_draw() override;
-	void m_on_key(int key) override;
-
-public:
-	NewEntryScreen(WindowManager *wmanager, decltype(on_accept) on_accept, decltype(on_cancel) on_cancel);
 };

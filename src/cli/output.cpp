@@ -3,7 +3,11 @@
 #include <curses.h>
 
 void OutputHandler::draw() {
-	move(origin.row, origin.col);
-	clrtoeol();
-	mvaddstr(origin.row, origin.col, output.c_str());
+	draw(stdscr);
+}
+
+void OutputHandler::draw(WINDOW *window) {
+	wmove(window, origin.row, origin.col);
+	wclrtoeol(window);
+	mvwaddstr(window, origin.row, origin.col, output.c_str());
 }
