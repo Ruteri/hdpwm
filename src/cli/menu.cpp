@@ -3,9 +3,8 @@
 
 #include <curses.h>
 
+#include <src/cli/utils.h>
 #include <src/cli/menu.h>
-
-constexpr int KEY_RETURN = 10;
 
 BasicMenu::BasicMenu(const Point pos, const std::vector<BasicMenuEntry>& links): origin_pos(pos), links(links) {}
 
@@ -34,6 +33,8 @@ void BasicMenu::draw() {
 }
 
 size_t BasicMenu::get_user_selection() {
+	cbreak();
+	noecho();
 	keypad(stdscr, TRUE);
 
 	for (;;) {
@@ -47,9 +48,7 @@ size_t BasicMenu::get_user_selection() {
 		case KEY_UP:
 			this->c_selected = (this->links.size() + this->c_selected - 1) % this->links.size();
 			break;
-		case KEY_RIGHT:
-		case KEY_ENTER:
-		case KEY_RETURN:
+		case KEY_RIGHT: case KEY_ENTER: case KEY_RETURN:
 			return this->c_selected;
 		}
 	}
