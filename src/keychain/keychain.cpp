@@ -7,7 +7,7 @@ constexpr char DB_KEY_SEED[] = "seed";
 std::unique_ptr<Keychain> Keychain::initialize_with_seed(std::filesystem::path path, crypto::Seed&& seed, crypto::PasswordHash&& pw_hash) {
 	std::unique_ptr<Keychain> kc = std::make_unique<Keychain>();
 	kc->data_path = std::move(path);
-	kc->tec = std::move(crypto::TimedEncryptionKey(std::move(pw_hash)));
+	kc->tec = crypto::TimedEncryptionKey(std::move(pw_hash));
 
 	leveldb::Options options;
 	options.create_if_missing = true;
@@ -31,8 +31,8 @@ std::unique_ptr<Keychain> Keychain::initialize_with_seed(std::filesystem::path p
 
 std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::PasswordHash pw_hash) {
 	std::unique_ptr<Keychain> kc = std::make_unique<Keychain>();
-	kc->data_path = std::move(path.string());
-	kc->tec = std::move(crypto::TimedEncryptionKey(std::move(pw_hash)));
+	kc->data_path = path.string();
+	kc->tec = crypto::TimedEncryptionKey(std::move(pw_hash));
 
 	auto db_path = kc->data_path / "db";
 	leveldb::Status status = leveldb::DB::Open(leveldb::Options(), db_path.string(), &kc->db);

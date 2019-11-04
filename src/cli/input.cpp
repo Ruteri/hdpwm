@@ -14,7 +14,9 @@ void InputHandler::process_key(int key) {
 		this->on_backspace();
 		break;
 	default:
-		this->on_char((char) key);
+		if (key <= 0xff) {
+			this->on_char(static_cast<char>(key));
+		}
 		break;
 	}
 }

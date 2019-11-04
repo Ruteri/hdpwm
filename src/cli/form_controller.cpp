@@ -51,6 +51,6 @@ void FormController::advance_form() {
 }
 
 void FormController::add_label(std::string text) {
-	Point origin{2 + (int) ( fields.size() + labels.size() ) * 3, 5};
+	Point origin{2 + static_cast<int>( fields.size() + labels.size() ) * 3, 5};
 	labels.push_back(std::make_unique<OutputHandler>(std::move(origin), std::move(text)));
 }

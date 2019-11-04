@@ -20,8 +20,8 @@ void BasicMenu::draw(WINDOW *scr) {
 	getmaxyx(scr, maxr, maxc);
 
 	int max_entries = maxr - origin_pos.row - 1;
-	int n_to_skip = std::max(0, (int) this->c_selected - max_entries + 1);
-	for (int i = 0; i < std::min(max_entries, (int) this->links.size()); ++i) {
+	int n_to_skip = std::max(0, static_cast<int>(this->c_selected) - max_entries + 1);
+	for (int i = 0; i < std::min(max_entries, static_cast<int>(this->links.size())); ++i) {
 		wmove(scr, origin_pos.row + i, 0);
 		wclrtoeol(scr);
 		std::string& to_print = links[i + n_to_skip].title;

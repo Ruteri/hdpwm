@@ -70,7 +70,7 @@ class GenerateKeychainScreen: public ScreenController {
 	}
 
 	void m_on_key(int) override {
-		auto keychain = std::move(Keychain::initialize_with_seed(this->db_path, std::move(this->seed), std::move(this->pw_hash)));
+		auto keychain = Keychain::initialize_with_seed(this->db_path, std::move(this->seed), std::move(this->pw_hash));
 		this->wmanager->set_controller(std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
 	}
 
@@ -87,7 +87,7 @@ public:
 			}
 		}
 
-		seed = std::move(crypto::mnemonic_to_seed(std::move(mnemonic)));
+		seed = crypto::mnemonic_to_seed(std::move(mnemonic));
 
 		outputs.push_back(std::make_unique<OutputHandler>(Point{3, 5}, "Please write down the following mnemonic and press any key to continue."));
 		outputs.push_back(std::make_unique<OutputHandler>(Point{4, 5}, combined_mnemonic));
@@ -122,7 +122,7 @@ void NewKeychainScreen::post_import_form() {
 	};
 
 	auto on_accept_pw = [result](utils::sensitive_string& pw) -> bool {
-		result->pw_hash = std::move(crypto::hash_password(pw));
+		result->pw_hash = crypto::hash_password(pw);
 		return true;
 	};
 
@@ -156,7 +156,7 @@ void ImportKeychainScreen::post_import_form() {
 		this->wmanager->pop_controller();
 		m_form_controller->cleanup();
 		try {
-			auto keychain = std::move(Keychain::open(result->db_path.value(), result->pw_hash.value()));
+			auto keychain = Keychain::open(result->db_path.value(), result->pw_hash.value());
 			this->wmanager->set_controller(std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
 		} catch(const std::exception& e) {
 			this->wmanager->set_controller(std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
@@ -171,7 +171,7 @@ void ImportKeychainScreen::post_import_form() {
 	};
 
 	auto on_accept_pw = [result](utils::sensitive_string& pw) -> bool {
-		result->pw_hash = std::move(crypto::hash_password(pw));
+		result->pw_hash = crypto::hash_password(pw);
 		return true;
 	};
 

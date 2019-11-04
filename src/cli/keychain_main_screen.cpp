@@ -63,7 +63,7 @@ KeychainMainScreen::KeychainMainScreen(WindowManager *wmanager, std::unique_ptr<
 	keychain_root_dir = new KeychainDirectoryNode(root_dir, nullptr);
 	keychain_root_dir->is_open = true;
 
-	flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+	flat_entries_cache = flatten_dirs(keychain_root_dir);
 }
 KeychainMainScreen::~KeychainMainScreen() {
 	cleanup();
@@ -121,7 +121,7 @@ void KeychainMainScreen::m_draw() {
 	int max_entries = this->maxlines - 4;
 	int n_to_skip = std::max(0, this->c_selected_index - max_entries + 1);
 
-	for (int i = 0; i < std::min(max_entries, (int) flat_entries_cache.size()); ++i) {
+	for (int i = 0; i < std::min(max_entries, static_cast<int>(flat_entries_cache.size())); ++i) {
 		wmove(this->main, i+1, 0);
 		wclrtoeol(this->main);
 		if (i + n_to_skip == this->c_selected_index) {
@@ -180,7 +180,7 @@ void KeychainMainScreen::m_on_key(int key) {
 		std::visit(overloaded {
 		[this](KeychainDirectoryNode* dir) {
 			dir->is_open ^= 0x1;
-			flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+			flat_entries_cache = flatten_dirs(keychain_root_dir);
 		},
 		[this](KeychainEntryNode*) {
 			// TODO: move to edit screen (or sth like that)
@@ -222,7 +222,7 @@ void KeychainMainScreen::post_entry_form() {
 			entry->parent_dir->entries.push_back({new_entry, entry->parent_dir});
 		},
 		}, flat_entries_cache[this->c_selected_index]);
-		flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
 	m_entry_form_controller = std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
@@ -266,7 +266,7 @@ void KeychainMainScreen::post_directory_form() {
 			entry->parent_dir->dirs.push_back({new_dir, entry->parent_dir});
 		},
 		}, flat_entries_cache[this->c_selected_index]);
-		flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
 	m_directory_form_controller = std::make_shared<FormController>(wmanager, this, this->main, on_form_done);

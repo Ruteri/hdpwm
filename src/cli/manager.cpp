@@ -75,7 +75,7 @@ void WindowManager::getch_loop() {
 }
 
 void WindowManager::run() {
-	auto getch_thread = std::move(std::thread([this](){ this->getch_loop(); }));
+	auto getch_thread = std::thread([this](){ this->getch_loop(); });
 
 	std::stack<std::shared_ptr<ScreenController>> controller_stack;
 
