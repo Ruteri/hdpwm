@@ -38,4 +38,3 @@ void StartScreen::m_on_key(int key) {
 		start_screen_menu->process_key(key);
 	}
 }
-

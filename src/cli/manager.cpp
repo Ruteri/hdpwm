@@ -4,8 +4,8 @@
 #include <src/cli/utils.h>
 
 #include <curses.h>
-#include <signal.h>
 #include <locale.h>
+#include <signal.h>
 
 #include <chrono>
 #include <stack>
@@ -22,7 +22,7 @@ void resizeHandler(int) {
 } // namespace
 
 WindowManager::WindowManager() {
-	setlocale(LC_ALL,"");
+	setlocale(LC_ALL, "");
 	initscr();
 	noecho();
 	cbreak();

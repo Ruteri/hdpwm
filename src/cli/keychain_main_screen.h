@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/cli/screen_controller.h>
 #include <src/cli/fwd.h>
+#include <src/cli/screen_controller.h>
 
 #include <src/keychain/keychain.h>
 
@@ -11,7 +11,7 @@
 class KeychainMainScreen : public ScreenController {
 	std::unique_ptr<Keychain> keychain;
 	std::shared_ptr<KeychainDirectory> keychain_root_dir;
-	std::vector<std::variant<KeychainDirectory*, KeychainEntry*>> flat_entries_cache;
+	std::vector<std::variant<KeychainDirectory *, KeychainEntry *>> flat_entries_cache;
 	int c_selected_index = 0;
 
 	int maxlines, maxcols;

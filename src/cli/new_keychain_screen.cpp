@@ -1,9 +1,9 @@
 #include <src/cli/new_keychain_screen.h>
 
-#include <src/cli/input.h>
 #include <src/cli/error_screen.h>
-#include <src/cli/keychain_main_screen.h>
 #include <src/cli/form_controller.h>
+#include <src/cli/input.h>
+#include <src/cli/keychain_main_screen.h>
 
 #include <src/crypto/mnemonic.h>
 #include <src/crypto/utils.h>

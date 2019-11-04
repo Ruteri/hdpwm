@@ -2,8 +2,8 @@
 
 #include <leveldb/db.h>
 
-#include <stdexcept>
 #include <list>
+#include <stdexcept>
 
 constexpr char DB_KEY_SEED[] = "seed";
 
@@ -68,8 +68,11 @@ std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::Pas
 
 namespace {
 
-void process_flatten_dir(std::list<std::variant<KeychainDirectory*, KeychainEntry*>>& to_visit, KeychainDirectory *dir) {
-	if (!dir->is_open) { return; }
+void process_flatten_dir(std::list<std::variant<KeychainDirectory *, KeychainEntry *>> &to_visit,
+    KeychainDirectory *dir) {
+	if (!dir->is_open) {
+		return;
+	}
 	for (int i = dir->entries.size() - 1; i >= 0; --i) {
 		to_visit.push_front(&(dir->entries[i]));
 	}
@@ -78,28 +81,25 @@ void process_flatten_dir(std::list<std::variant<KeychainDirectory*, KeychainEntr
 	}
 }
 
-} // annonymous namespace
+} // namespace
 
-std::vector<std::variant<KeychainDirectory*, KeychainEntry*>> flatten_dirs(std::shared_ptr<KeychainDirectory> root) {
-	std::vector<std::variant<KeychainDirectory*, KeychainEntry*>> rv;
-	std::list<std::variant<KeychainDirectory*, KeychainEntry*>> to_visit;
+std::vector<std::variant<KeychainDirectory *, KeychainEntry *>> flatten_dirs(
+    std::shared_ptr<KeychainDirectory> root) {
+	std::vector<std::variant<KeychainDirectory *, KeychainEntry *>> rv;
+	std::list<std::variant<KeychainDirectory *, KeychainEntry *>> to_visit;
 
 	process_flatten_dir(to_visit, root.get());
 
 	while (!to_visit.empty()) {
-		std::variant<KeychainDirectory*, KeychainEntry*> c_node_v = to_visit.front();
+		std::variant<KeychainDirectory *, KeychainEntry *> c_node_v = to_visit.front();
 		to_visit.pop_front();
 
 		rv.push_back(c_node_v);
 
-		std::visit(overloaded{
-			[](KeychainEntry*) {},
-			[&to_visit](KeychainDirectory *dir) {
-				process_flatten_dir(to_visit, dir);
-			}
-		}, c_node_v);
+		std::visit(overloaded{[](KeychainEntry *) {},
+		               [&to_visit](KeychainDirectory *dir) { process_flatten_dir(to_visit, dir); }},
+		    c_node_v);
 	}
 
 	return rv;
 }
-

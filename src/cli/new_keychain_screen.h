@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/cli/screen_controller.h>
 #include <src/cli/fwd.h>
+#include <src/cli/screen_controller.h>
 
 #include <memory>
 

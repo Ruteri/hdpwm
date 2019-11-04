@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/cli/screen_controller.h>
 #include <src/cli/manager.h>
+#include <src/cli/screen_controller.h>
 #include <src/cli/utils.h>
 
 class ErrorScreen : public ScreenController {

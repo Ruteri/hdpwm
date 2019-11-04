@@ -2,13 +2,13 @@
 
 #include <src/cli/fwd.h>
 #include <src/cli/input.h>
-#include <src/cli/output.h>
 #include <src/cli/manager.h>
+#include <src/cli/output.h>
 #include <src/cli/screen_controller.h>
 
 #include <functional>
-#include <vector>
 #include <memory>
+#include <vector>
 
 class FormController : public ScreenController {
 	ScreenController *parent;
@@ -52,4 +52,3 @@ class FormController : public ScreenController {
 		    }));
 	}
 };
-

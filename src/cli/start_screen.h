@@ -11,4 +11,3 @@ class StartScreen : public ScreenController {
   public:
 	StartScreen(WindowManager *wmanager);
 };
-
