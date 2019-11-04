@@ -24,4 +24,9 @@ public:
 	std::unique_ptr<Screen> run() override;
 };
 
+class KeychainMainScreen: public Screen {
+public:
+	std::unique_ptr<Screen> run() override;
+};
+
 void show_error(const Point& pos, const std::string& msg);

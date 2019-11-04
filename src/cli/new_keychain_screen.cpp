@@ -43,7 +43,7 @@ std::optional<std::filesystem::path> get_db_path() {
 }
 
 std::optional<utils::sensitive_string> get_password() {
-	SensitiveInputHandler password_input({5, 5}, "Password (max 256 chars): ");
+	SensitiveInputHandler password_input({5, 5}, "Keychain password: ");
 	if (password_input.process() == input_action_result::BACK) {
 		return {};
 	}
@@ -65,25 +65,24 @@ std::unique_ptr<Screen> NewKeychainScreen::run() {
 		return std::make_unique<StartScreen>();
 	}
 
-	utils::sensitive_string password;
-	if (auto provided_password = get_password()) {
-		password = std::move(provided_password.value());
-	} else {
+	auto provided_kc_password = get_password();
+	if (!provided_kc_password) {
 		return std::make_unique<StartScreen>();
 	}
 
 	std::vector<std::string> mnemonic = crypto::generate_mnemonic(24);
 	mvaddstr(7, 5, "Please write down the following mnemonic and press any key to continue.");
 	move(8, 5);
-	for (std::string &word : mnemonic) {
+	for (const std::string &word : mnemonic) {
 		addstr(word.c_str());
-		utils::secure_zero_string(word);
 		addch(' ');
 	}
 
 	getch();
 
-	// TODO: initialize db with seed/mnemonic
+	auto seed = crypto::mnemonic_to_seed(std::move(mnemonic));
 
-	return std::make_unique<StartScreen>();
+	// auto db = DB::initialize(path, std::move(encrypted_seed), crypto::hash_password(std::move(provided_kc_password.value())));
+
+	return std::make_unique<KeychainMainScreen>();
 }

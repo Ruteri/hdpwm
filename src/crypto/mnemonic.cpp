@@ -1,30 +1,55 @@
-#include <src/crypto/mnemonic-wordlist.cpp>
+#include <src/crypto/mnemonic.h>
 
+#include <src/crypto/mnemonic-wordlist.cpp>
+#include <src/utils/utils.h>
+
+#include <external/cryptopp/modes.h>
 #include <external/cryptopp/osrng.h>
 #include <external/cryptopp/pwdbased.h>
 #include <external/cryptopp/sha.h>
 
-#include <iomanip>
-#include <iostream>
 #include <stdexcept>
-
-namespace {
-
-// WIP debug output until compliant with BIP39
-void print_bytes(const CryptoPP::byte *buffer, int size) {
-	std::cout << "0x";
-	for (int i = 0; i < size; ++i) {
-		std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(buffer[i]);
-	}
-
-	std::cout << std::endl;
-}
-
-} // annonymous namespace (utils)
 
 namespace crypto {
 
 constexpr int PBKDF2_ITERATION_COUNT = 2048;
+
+PasswordHash hash_password(utils::sensitive_string&& password) {
+	PasswordHash pw_hash;
+
+	CryptoPP::SHA256 sha;
+	sha.CalculateDigest(pw_hash.data(), reinterpret_cast<CryptoPP::byte*>(password.data), password.size());
+
+	return pw_hash;
+}
+
+EncryptedSeed encrypt_seed(Seed seed, PasswordHash password_hash) {
+	EncryptedSeed encrypted_seed;
+
+	CryptoPP::byte iv[ CryptoPP::AES::BLOCKSIZE ];
+	memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+
+	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(reinterpret_cast<CryptoPP::byte*>( password_hash.data() ), PasswordHash::Size, iv);
+	cfbEncryption.ProcessData(
+	    reinterpret_cast<CryptoPP::byte*>(encrypted_seed.data()),
+	    reinterpret_cast<CryptoPP::byte*>(seed.data()), Seed::Size);
+
+	return encrypted_seed;
+}
+
+Seed decrypt_seed(EncryptedSeed encrypted_seed, PasswordHash password_hash) {
+	Seed seed;
+
+	CryptoPP::byte iv[ CryptoPP::AES::BLOCKSIZE ];
+	memset( iv, 0x00, CryptoPP::AES::BLOCKSIZE );
+
+	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(reinterpret_cast<CryptoPP::byte*>( password_hash.data() ), PasswordHash::Size, iv);
+	cfbDecryption.ProcessData(
+	    reinterpret_cast<CryptoPP::byte*>(seed.data()),
+	    reinterpret_cast<CryptoPP::byte*>(encrypted_seed.data()), EncryptedSeed::Size);
+
+	return seed;
+}
 
 uint8_t extract_bit(const CryptoPP::byte *buffer, int cb) {
 	const CryptoPP::byte byte = buffer[cb/8];
@@ -33,7 +58,7 @@ uint8_t extract_bit(const CryptoPP::byte *buffer, int cb) {
 }
 
 std::string word_at(int index) {
-	return mnemonic_dictionary[index];
+	return mnemonic_dictionary[index % mnemonic_dictionary.size()];
 }
 
 int find_word_index(std::string word) {
@@ -71,6 +96,14 @@ std::vector<std::string> get_words_from_indices(std::vector<int> indices) {
 	return rv;
 }
 
+std::string get_random_word() {
+	CryptoPP::byte seed[2];
+	CryptoPP::NonblockingRng rng;
+	rng.GenerateBlock(seed, sizeof(seed));
+	uint16_t random_index = seed[0] << 8 | seed[1];
+	return word_at(random_index);
+}
+
 std::vector<std::string> generate_mnemonic(int entropy_size) {
 
 	constexpr int CHECKSUM_MAX_SIZE = 1;
@@ -83,19 +116,17 @@ std::vector<std::string> generate_mnemonic(int entropy_size) {
 	CryptoPP::SHA256 checksum_digester;
 	checksum_digester.CalculateTruncatedDigest(seed + entropy_size, 1, seed, entropy_size);
 
-#	ifdef DEBUG
-	print_bytes(seed, entropy_size + CHECKSUM_MAX_SIZE);
-#	endif
-
 	auto indices = bitsplit_11(seed, entropy_size * 8 + entropy_size / 4);
 	auto words = get_words_from_indices(indices);
+
+	std::string extra_word = get_random_word();
+	words.push_back(extra_word);
 
 	delete[] seed;
 	return words;
 }
 
-// TODO: add user-provided password
-std::vector<uint8_t> mnemonic_to_seed(std::vector<std::string> words) {
+Seed mnemonic_to_seed(std::vector<std::string> words) {
 	int words_len = 0;
 	for (auto word : words) {
 		words_len += word.size();
@@ -108,27 +139,16 @@ std::vector<uint8_t> mnemonic_to_seed(std::vector<std::string> words) {
 		pw_ptr += word.size();
 	}
 
-	CryptoPP::byte salt[] = "mnemonic"; // + user-provided password
+	const CryptoPP::byte salt[] = "ob1Ofabex?reg+ojAfKosh89OkEgUsvojbeurOv7knok";
 
-    CryptoPP::byte derived[CryptoPP::SHA512::DIGESTSIZE];
+	Seed seed;
 	CryptoPP::PKCS5_PBKDF2_HMAC<CryptoPP::SHA512> pbkdf;
 	CryptoPP::byte unused = 0;
 
-    pbkdf.DeriveKey(derived, CryptoPP::SHA512::DIGESTSIZE, unused, mnemonic, words_len, salt, sizeof(salt), PBKDF2_ITERATION_COUNT);
-
-#	ifdef DEBUG
-	print_bytes(derived, CryptoPP::SHA512::DIGESTSIZE);
-#	endif
-
-	std::vector<uint8_t> seed;
-	seed.reserve(CryptoPP::SHA512::DIGESTSIZE);
-	for (CryptoPP::byte byte : derived) {
-		seed.push_back(byte);
-	}
+	pbkdf.DeriveKey(reinterpret_cast<CryptoPP::byte*>(seed.data()), CryptoPP::SHA512::DIGESTSIZE, unused, mnemonic, words_len, salt, sizeof(salt), PBKDF2_ITERATION_COUNT);
 
 	delete[] mnemonic;
 	return seed;
 }
-
 
 } // namespace crypto

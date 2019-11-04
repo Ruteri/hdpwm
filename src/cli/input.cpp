@@ -63,7 +63,7 @@ void SensitiveInputHandler::draw() {
 	clrtoeol();
 
 	mvaddstr(this->origin.row, this->origin.col, this->title.c_str());
-	for (auto i = this->value.index; i > 0; --i) {
+	for (auto i = this->value.size(); i > 0; --i) {
 		addch('*');
 	}
 }
