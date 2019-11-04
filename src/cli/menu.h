@@ -1,12 +1,9 @@
 #pragma once
 
+#include <src/cli/utils.h>
+
 #include <string>
 #include <vector>
-
-struct Point {
-	int row;
-	int col;
-};
 
 struct BasicMenuEntry {
 	std::string title;

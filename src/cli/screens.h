@@ -13,8 +13,6 @@ public:
 };
 
 class NewKeychainScreen: public Screen {
-	bool process_path(const std::string& path);
-
 public:
 	std::unique_ptr<Screen> run() override;
 };

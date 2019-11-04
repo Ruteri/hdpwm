@@ -80,12 +80,12 @@ std::vector<std::string> generate_mnemonic(int entropy_size) {
 	CryptoPP::NonblockingRng rng;
 	rng.GenerateBlock(seed, entropy_size);
 
-	print_bytes(seed, entropy_size);
-
 	CryptoPP::SHA256 checksum_digester;
 	checksum_digester.CalculateTruncatedDigest(seed + entropy_size, 1, seed, entropy_size);
 
+#	ifdef DEBUG
 	print_bytes(seed, entropy_size + CHECKSUM_MAX_SIZE);
+#	endif
 
 	auto indices = bitsplit_11(seed, entropy_size * 8 + entropy_size / 4);
 	auto words = get_words_from_indices(indices);
@@ -116,7 +116,9 @@ std::vector<uint8_t> mnemonic_to_seed(std::vector<std::string> words) {
 
     pbkdf.DeriveKey(derived, CryptoPP::SHA512::DIGESTSIZE, unused, mnemonic, words_len, salt, sizeof(salt), PBKDF2_ITERATION_COUNT);
 
+#	ifdef DEBUG
 	print_bytes(derived, CryptoPP::SHA512::DIGESTSIZE);
+#	endif
 
 	std::vector<uint8_t> seed;
 	seed.reserve(CryptoPP::SHA512::DIGESTSIZE);
