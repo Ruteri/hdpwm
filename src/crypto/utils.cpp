@@ -1,5 +1,7 @@
 #include <src/crypto/utils.h>
 
+#include <cstring>
+
 namespace utils {
 
 sensitive_string::sensitive_string() {}
@@ -23,6 +25,17 @@ sensitive_string::sensitive_string(const std::string &str) {
 	for (char c : str) {
 		this->push_back(c);
 	}
+}
+
+sensitive_string::sensitive_string(const sensitive_string &other) {
+	std::memcpy(this->data, other.data, other.index);
+	this->index = other.index;
+}
+
+sensitive_string &sensitive_string::operator=(const sensitive_string &other) {
+	std::memcpy(this->data, other.data, other.index);
+	this->index = other.index;
+	return *this;
 }
 
 sensitive_string::sensitive_string(std::string &&str) {
@@ -51,7 +64,8 @@ void sensitive_string::pop_back() {
 // returns false if out of space
 bool sensitive_string::push_back(char c) {
 	if (this->index < 255) {
-		this->data[++this->index] = c;
+		this->data[this->index++] = c;
+		this->data[this->index] = '\0';
 		return true;
 	}
 

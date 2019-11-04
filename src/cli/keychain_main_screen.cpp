@@ -38,7 +38,7 @@ void KeychainMainScreen::m_init() {
 
 	/* header */
 
-	this->header = newwin(1, this->maxcols / 5 * 4, 0, 0);
+	this->header = newwin(1, this->maxcols, 0, 0);
 
 	auto data_string_path = this->keychain->get_data_dir_path();
 	mvwaddstr(this->header, 0, 0, "Browsing ");
@@ -48,16 +48,16 @@ void KeychainMainScreen::m_init() {
 
 	/* main */
 
-	this->main = newwin(this->maxlines - 2, this->maxcols / 5 * 4, 1, 0);
+	this->main = newwin(this->maxlines - 2, this->maxcols / 5 * 3, 1, 0);
 
 	/* details */
 
 	this->details = newwin(
-	    this->maxlines - 2, this->maxcols - (this->maxcols / 5 * 4), 1, this->maxcols / 5 * 4);
+	    this->maxlines - 2, this->maxcols - (this->maxcols / 5 * 3), 1, this->maxcols / 5 * 3);
 
 	/* footer */
 
-	this->footer = newwin(1, this->maxcols / 5 * 4, this->maxlines - 1, 0);
+	this->footer = newwin(1, this->maxcols / 5 * 3, this->maxlines - 1, 0);
 	mvwaddstr(this->footer, 0, 0,
 	    "<↑↓> to navigate | <n/N> to add new entry/group | <↲> to view & edit | <q> to quit");
 
@@ -94,7 +94,7 @@ void KeychainMainScreen::draw_entries_box() {
 	int n_to_skip = std::max(0, this->c_selected_index - max_entries + 1);
 
 	for (int i = 0; i < std::min(max_entries, static_cast<int>(flat_entries_cache.size())); ++i) {
-		if (i + n_to_skip == this->c_selected_index) {
+		if (state == State::Browsing && i + n_to_skip == this->c_selected_index) {
 			wattron(this->main, A_STANDOUT);
 		}
 
@@ -105,7 +105,7 @@ void KeychainMainScreen::draw_entries_box() {
 		    },
 		    flat_entries_cache[i]);
 
-		if (i + n_to_skip == this->c_selected_index) {
+		if (state == State::Browsing && i + n_to_skip == this->c_selected_index) {
 			wattroff(this->main, A_STANDOUT);
 		}
 	}
@@ -126,8 +126,8 @@ void KeychainMainScreen::draw_details_box() {
 
 void KeychainMainScreen::m_draw() {
 
-	draw_entries_box();
-	draw_details_box();
+	if (state != State::Creating) draw_entries_box();
+	if (state == State::Browsing) draw_details_box();
 
 	wrefresh(this->main);
 	wrefresh(this->details);
@@ -150,9 +150,7 @@ void KeychainMainScreen::m_on_key(int key) {
 			        dir->is_open ^= 0x1;
 			        flat_entries_cache = flatten_dirs(keychain_root_dir);
 		        },
-		        [this](KeychainEntry *) {
-			        // TODO(mmorusiewicz): move to edit screen (or sth like that)
-		        },
+		        [this](KeychainEntry *entry) { post_entry_view(entry); },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
@@ -193,20 +191,25 @@ void KeychainMainScreen::post_entry_form() {
 		        },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
+
+		state = State::Browsing;
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
-	auto on_form_cancel = [this]() { this->wmanager->pop_controller(); };
+	auto on_form_cancel = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
 
 	auto entry_form_controller =
-	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
+	    std::make_unique<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
 
-	auto on_name_accept = [entry_result](std::string &name) -> bool {
+	auto on_name_accept = [entry_result](const std::string &name) -> bool {
 		entry_result->name = name;
 		return !name.empty();
 	};
 
-	auto on_details_accept = [entry_result](std::string &details) -> bool {
+	auto on_details_accept = [entry_result](const std::string &details) -> bool {
 		entry_result->details = details;
 		return true;
 	};
@@ -214,7 +217,8 @@ void KeychainMainScreen::post_entry_form() {
 	entry_form_controller->add_field<StringInputHandler>("Entry name: ", on_name_accept);
 	entry_form_controller->add_field<StringInputHandler>("Details: ", on_details_accept);
 
-	wmanager->push_controller(entry_form_controller);
+	state = State::Creating;
+	wmanager->push_controller(std::move(entry_form_controller));
 }
 
 void KeychainMainScreen::post_directory_form() {
@@ -242,20 +246,63 @@ void KeychainMainScreen::post_directory_form() {
 		        },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
+
+		state = State::Browsing;
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
-	auto on_form_cancel = [this]() { this->wmanager->pop_controller(); };
+	auto on_form_cancel = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
 
 	auto directory_form_controller =
-	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
+	    std::make_unique<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
 
-	auto on_name_accept = [dir_result](std::string &name) -> bool {
+	auto on_name_accept = [dir_result](const std::string &name) -> bool {
 		dir_result->name = name;
 		return !name.empty();
 	};
 
+	state = State::Creating;
 	directory_form_controller->add_field<StringInputHandler>("Directory name: ", on_name_accept);
 
-	wmanager->push_controller(directory_form_controller);
+	wmanager->push_controller(std::move(directory_form_controller));
+}
+
+void KeychainMainScreen::post_entry_view(KeychainEntry *entry) {
+	auto on_form_done = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
+
+	auto entry_edit_form =
+	    std::make_unique<FormController>(wmanager, this, this->details, on_form_done, on_form_done);
+
+	auto on_name_change_accept = [entry](const std::string &new_name) {
+		if (new_name.empty()) return false;
+		entry->meta.name = new_name;
+		return true;
+	};
+
+	auto on_details_change_accept = [entry](const std::string &new_details) {
+		if (new_details.empty()) return false;
+		entry->meta.details = new_details;
+		return true;
+	};
+
+	auto name_input = entry_edit_form->add_field<StringInputHandler>(
+	    Point{1, 0}, "Name: ", on_name_change_accept);
+	name_input->set_value(entry->meta.name);
+
+	entry_edit_form->add_label(Point{2, 0}, "Secret: ");
+	entry_edit_form->add_output(std::make_unique<SensitiveOutputHandler>(
+	    Point{2, 8}, utils::sensitive_string("somesecret")));
+
+	auto details_input = entry_edit_form->add_field<StringInputHandler>(
+	    Point{3, 0}, "Details: ", on_details_change_accept);
+	details_input->set_value(entry->meta.details);
+
+	state = State::Editing;
+	wmanager->push_controller(std::move(entry_edit_form));
 }

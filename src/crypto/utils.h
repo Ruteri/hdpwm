@@ -10,11 +10,11 @@ struct sensitive_string {
 	char *data = new char[256];
 
 	sensitive_string();
+	sensitive_string(const sensitive_string &);
 	sensitive_string(sensitive_string &&);
-	sensitive_string(const sensitive_string &) = delete;
 
+	sensitive_string &operator=(const sensitive_string &);
 	sensitive_string &operator=(sensitive_string &&);
-	sensitive_string &operator=(const sensitive_string &) = delete;
 
 	explicit sensitive_string(const std::string &);
 	explicit sensitive_string(std::string &&);

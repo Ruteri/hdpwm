@@ -22,7 +22,7 @@ class InputHandler {
 
 template <typename V> class InputHandlerCallback : public InputHandler {
   public:
-	using ValueCallback = std::function<void(V &)>;
+	using ValueCallback = std::function<void(const V &)>;
 	using UValue = V;
 
   protected:
@@ -48,6 +48,8 @@ class StringInputHandler : public InputHandlerCallback<std::string> {
 	StringInputHandler(const Point &origin, const std::string &title, ValueCallback on_accept);
 
 	void draw(WINDOW *window) override;
+
+	void set_value(const std::string &v) { value = v; }
 };
 
 class SensitiveInputHandler : public InputHandlerCallback<utils::sensitive_string> {

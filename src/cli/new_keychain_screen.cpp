@@ -65,7 +65,7 @@ class GenerateKeychainScreen : public ScreenController {
 	std::filesystem::path db_path;
 	crypto::PasswordHash pw_hash;
 	crypto::Seed seed;
-	std::vector<std::unique_ptr<OutputHandler>> outputs;
+	std::vector<std::unique_ptr<StringOutputHandler>> outputs;
 
 	void m_draw() override {
 		for (auto &output : outputs) {
@@ -98,9 +98,9 @@ class GenerateKeychainScreen : public ScreenController {
 
 		seed = crypto::mnemonic_to_seed(std::move(mnemonic));
 
-		outputs.push_back(std::make_unique<OutputHandler>(Point{3, 5},
+		outputs.push_back(std::make_unique<StringOutputHandler>(Point{3, 5},
 		    "Please write down the following mnemonic and press any key to continue."));
-		outputs.push_back(std::make_unique<OutputHandler>(Point{4, 5}, combined_mnemonic));
+		outputs.push_back(std::make_unique<StringOutputHandler>(Point{4, 5}, combined_mnemonic));
 	}
 };
 
@@ -138,12 +138,12 @@ void NewKeychainScreen::post_import_form() {
 	auto form_controller =
 	    std::make_shared<FormController>(wmanager, nullptr, window, on_form_done, on_form_cancel);
 
-	auto on_accept_path = [result](std::string &path) -> bool {
+	auto on_accept_path = [result](const std::string &path) -> bool {
 		result->db_path = expand_path(path, "~/.hdpwm");
 		return validate_new_kc_path(result->db_path.value()).valid;
 	};
 
-	auto on_accept_pw = [result](utils::sensitive_string &pw) -> bool {
+	auto on_accept_pw = [result](const utils::sensitive_string &pw) -> bool {
 		result->pw_hash = crypto::hash_password(pw);
 		return true;
 	};
@@ -196,12 +196,12 @@ void ImportKeychainScreen::post_import_form() {
 	auto form_controller =
 	    std::make_shared<FormController>(wmanager, this, window, on_form_done, on_form_cancel);
 
-	auto on_accept_path = [result](std::string &path) -> bool {
+	auto on_accept_path = [result](const std::string &path) -> bool {
 		result->db_path = expand_path(path, "~/.hdpwm");
 		return validate_import_kc_path(result->db_path.value()).valid;
 	};
 
-	auto on_accept_pw = [result](utils::sensitive_string &pw) -> bool {
+	auto on_accept_pw = [result](const utils::sensitive_string &pw) -> bool {
 		result->pw_hash = crypto::hash_password(pw);
 		return true;
 	};

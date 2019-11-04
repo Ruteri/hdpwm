@@ -39,16 +39,28 @@ class FormController : public ScreenController {
 	    std::function<void()> on_done, std::function<void()> on_cancel);
 
 	void add_label(std::string);
+	void add_label(Point origin, std::string);
+
+	void add_output(std::unique_ptr<OutputHandler>);
 
 	template <typename InputType>
-	void add_field(std::string title, std::function<bool(typename InputType::UValue &)> on_accept) {
+	InputType *add_field(
+	    std::string title, std::function<bool(const typename InputType::UValue &)> on_accept) {
 		Point origin{2 + (int)(fields.size() + labels.size()) * 3, 5};
-		fields.push_back(new InputType(
-		    std::move(origin), std::move(title), [this, on_accept](typename InputType::UValue &v) {
+		return add_field<InputType>(origin, title, on_accept);
+	}
+
+	template <typename InputType>
+	InputType *add_field(Point origin, std::string title,
+	    std::function<bool(const typename InputType::UValue &)> on_accept) {
+		InputType *input_handler =
+		    new InputType(origin, title, [this, on_accept](const typename InputType::UValue &v) {
 			    if (on_accept(v))
 				    advance_form();
 			    else {
 			    }
-		    }));
+		    });
+		fields.push_back(input_handler);
+		return input_handler;
 	}
 };

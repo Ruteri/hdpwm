@@ -22,6 +22,12 @@ void FormController::m_cleanup() {
 void FormController::m_draw() {
 	wclear(window);
 
+	if (parent) parent->draw();
+
+	if (fields.size() == 0) {
+		curs_set(0);
+	}
+
 	for (auto &output : labels) {
 		output->draw(window);
 	}
@@ -46,7 +52,11 @@ void FormController::m_on_key(int key) {
 		if (parent) parent->on_key(key);
 		break;
 	case State::PROCESSING:
-		if (fields.empty()) return;
+		if (fields.empty()) {
+			on_done();
+			return;
+		}
+
 		switch (key) {
 		case KEY_UP:
 			current_input = current_input <= 0 ? 0 : current_input - 1;
@@ -74,5 +84,13 @@ void FormController::advance_form() {
 
 void FormController::add_label(std::string text) {
 	Point origin{2 + static_cast<int>(fields.size() + labels.size()) * 3, 5};
-	labels.push_back(std::make_unique<OutputHandler>(std::move(origin), std::move(text)));
+	return add_label(origin, text);
+}
+
+void FormController::add_label(Point origin, std::string text) {
+	labels.push_back(std::make_unique<StringOutputHandler>(std::move(origin), std::move(text)));
+}
+
+void FormController::add_output(std::unique_ptr<OutputHandler> output) {
+	labels.push_back(std::move(output));
 }

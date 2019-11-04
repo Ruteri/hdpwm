@@ -9,6 +9,8 @@
 #include <vector>
 
 class KeychainMainScreen : public ScreenController {
+	enum class State { Browsing, Creating, Editing } state = State::Browsing;
+
 	std::unique_ptr<Keychain> keychain;
 	std::shared_ptr<KeychainDirectory> keychain_root_dir;
 	std::vector<std::variant<KeychainDirectory *, KeychainEntry *>> flat_entries_cache;
@@ -19,6 +21,7 @@ class KeychainMainScreen : public ScreenController {
 
 	void post_entry_form();
 	void post_directory_form();
+	void post_entry_view(KeychainEntry *entry);
 
 	void draw_entries_box();
 	void draw_details_box();

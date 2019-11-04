@@ -1,5 +1,6 @@
 #include <src/cli/manager.h>
 
+#include <src/cli/color.h>
 #include <src/cli/screen_controller.h>
 #include <src/cli/utils.h>
 
@@ -29,6 +30,7 @@ WindowManager::WindowManager() {
 	keypad(stdscr, TRUE);
 	nodelay(stdscr, TRUE);
 	curs_set(0);
+	init_colors();
 
 	g_manager = this;
 	signal(SIGWINCH, resizeHandler);
