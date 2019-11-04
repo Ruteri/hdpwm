@@ -1,12 +1,12 @@
-#include <iostream>
-#include <iomanip>
-#include <stdexcept>
+#include <src/crypto/mnemonic-wordlist.cpp>
 
-#include <external/cryptopp/sha.h>
 #include <external/cryptopp/osrng.h>
 #include <external/cryptopp/pwdbased.h>
+#include <external/cryptopp/sha.h>
 
-#include <src/crypto/mnemonic-wordlist.cpp>
+#include <iomanip>
+#include <iostream>
+#include <stdexcept>
 
 namespace {
 

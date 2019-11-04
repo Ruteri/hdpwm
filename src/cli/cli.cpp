@@ -1,15 +1,15 @@
-#include <string>
-#include <vector>
-#include <memory>
-#include <functional>
+#include <src/cli/menu.h>
+#include <src/cli/screens.h>
+#include <src/cli/utils.h>
+
+#include <src/crypto/mnemonic.h>
 
 #include <curses.h>
 
-#include <src/cli/utils.h>
-#include <src/crypto/mnemonic.h>
-#include <src/cli/menu.h>
-#include <src/cli/screens.h>
-
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
 
 int main() {
 

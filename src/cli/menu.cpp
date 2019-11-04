@@ -1,10 +1,11 @@
-#include <string>
-#include <vector>
+#include <src/cli/menu.h>
+
+#include <src/cli/utils.h>
 
 #include <curses.h>
 
-#include <src/cli/utils.h>
-#include <src/cli/menu.h>
+#include <string>
+#include <vector>
 
 BasicMenu::BasicMenu(const Point pos, const std::vector<BasicMenuEntry>& links): origin_pos(pos), links(links) {}
 

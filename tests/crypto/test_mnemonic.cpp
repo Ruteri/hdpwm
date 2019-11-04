@@ -1,9 +1,8 @@
-#include <external/catch2/catch.hpp>
-
 #include <src/crypto/mnemonic.h>
 
 #include <tests/crypto/test_data.cpp>
 
+#include <external/catch2/catch.hpp>
 
 void verify_words_are_in_dictionary(const std::vector<std::string>& mnemonic) {
 	for (auto word : mnemonic) {

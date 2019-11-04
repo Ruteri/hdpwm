@@ -1,6 +1,6 @@
-#include <vector>
-
 #include <src/utils/utils.h>
+
+#include <vector>
 
 struct mnemonic_data {
 	std::vector<std::string> mnemonic;
