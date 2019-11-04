@@ -73,32 +73,35 @@ void KeychainMainScreen::m_cleanup() {
 	header = main = details = footer = nullptr;
 }
 
-void KeychainMainScreen::m_draw() {
+namespace {
 
-	/*** entries box ***/
+auto draw_keychain_directory(WINDOW *win, int row, KeychainDirectory *dir) {
+	std::string to_print = dir->is_open ? "-" : "+";
+	to_print += dir->meta.name;
+	mvwaddstr(win, row + 1, 1 + dir->dir_level, to_print.c_str());
+}
+
+auto draw_keychain_entry(WINDOW *win, int row, KeychainEntry *entry) {
+	mvwaddstr(win, row + 1, 2 + entry->parent_dir->dir_level, entry->meta.name.c_str());
+}
+
+} // namespace
+
+void KeychainMainScreen::draw_entries_box() {
+	wclear(this->main);
 
 	int max_entries = this->maxlines - 4;
 	int n_to_skip = std::max(0, this->c_selected_index - max_entries + 1);
 
 	for (int i = 0; i < std::min(max_entries, static_cast<int>(flat_entries_cache.size())); ++i) {
-		wmove(this->main, i + 1, 0);
-		wclrtoeol(this->main);
 		if (i + n_to_skip == this->c_selected_index) {
 			wattron(this->main, A_STANDOUT);
 		}
 
 		std::visit(
 		    overloaded{
-		        [this, i](KeychainDirectory *dir) {
-			        std::string to_print = dir->is_open ? "-" : "+";
-			        to_print += dir->meta.name;
-			        mvwaddstr(this->main, i + 1, 1 + dir->dir_level, to_print.c_str());
-		        },
-		        [this, i](KeychainEntry *entry) {
-			        std::string to_print = entry->meta.name;
-			        mvwaddstr(
-			            this->main, i + 1, 2 + entry->parent_dir->dir_level, to_print.c_str());
-		        },
+		        [this, i](KeychainDirectory *dir) { draw_keychain_directory(this->main, i, dir); },
+		        [this, i](KeychainEntry *entry) { draw_keychain_entry(this->main, i, entry); },
 		    },
 		    flat_entries_cache[i]);
 
@@ -106,27 +109,25 @@ void KeychainMainScreen::m_draw() {
 			wattroff(this->main, A_STANDOUT);
 		}
 	}
+}
 
-	wclrtobot(this->main);
+void KeychainMainScreen::draw_details_box() {
+	wclear(this->details);
 
-	/*** details box ***/
+	std::visit(
+	    overloaded{
+	        [](KeychainDirectory *) { /* TODO (notes? derivation path?) */ },
+	        [this](KeychainEntry *entry) {
+		        mvwaddstr(this->details, 1, 0, entry->meta.details.c_str());
+	        },
+	    },
+	    flat_entries_cache[this->c_selected_index]);
+}
 
-	{
-		wmove(this->details, 1, 0);
-		wclrtoeol(this->details);
+void KeychainMainScreen::m_draw() {
 
-		std::string to_print;
-		std::visit(
-		    overloaded{
-		        [&to_print](KeychainDirectory *) {},
-		        [&to_print](KeychainEntry *entry) { to_print = entry->meta.details; },
-		    },
-		    flat_entries_cache[this->c_selected_index]);
-
-		mvwaddstr(this->details, 1, 0, to_print.c_str());
-	}
-
-	wclrtobot(this->details);
+	draw_entries_box();
+	draw_details_box();
 
 	wrefresh(this->main);
 	wrefresh(this->details);
@@ -195,9 +196,7 @@ void KeychainMainScreen::post_entry_form() {
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
-	auto on_form_cancel = [this]() {
-		this->wmanager->pop_controller();
-	};
+	auto on_form_cancel = [this]() { this->wmanager->pop_controller(); };
 
 	auto entry_form_controller =
 	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
@@ -246,9 +245,7 @@ void KeychainMainScreen::post_directory_form() {
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
-	auto on_form_cancel = [this]() {
-		this->wmanager->pop_controller();
-	};
+	auto on_form_cancel = [this]() { this->wmanager->pop_controller(); };
 
 	auto directory_form_controller =
 	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);

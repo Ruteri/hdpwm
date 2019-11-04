@@ -20,6 +20,9 @@ class KeychainMainScreen : public ScreenController {
 	void post_entry_form();
 	void post_directory_form();
 
+	void draw_entries_box();
+	void draw_details_box();
+
 	void m_init() override;
 	void m_cleanup() override;
 	void m_draw() override;
