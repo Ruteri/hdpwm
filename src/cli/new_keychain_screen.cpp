@@ -75,7 +75,7 @@ class GenerateKeychainScreen : public ScreenController {
 	}
 
 	void m_on_key(int) override {
-		auto keychain = Keychain::initialize_with_seed(
+		auto keychain = keychain::Keychain::initialize_with_seed(
 		    this->db_path, std::move(this->seed), std::move(this->pw_hash));
 		this->wmanager->set_controller(
 		    std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
@@ -180,7 +180,8 @@ void ImportKeychainScreen::post_import_form() {
 	auto on_form_done = [this, result]() {
 		this->wmanager->pop_controller();
 		try {
-			auto keychain = Keychain::open(result->db_path.value(), result->pw_hash.value());
+			auto keychain =
+			    keychain::Keychain::open(result->db_path.value(), result->pw_hash.value());
 			this->wmanager->set_controller(
 			    std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
 		} catch (const std::exception &e) {

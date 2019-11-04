@@ -13,57 +13,59 @@
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
 
-struct KeychainEntryMeta {
+namespace keychain {
+
+struct EntryMeta {
 	std::string name;
 	std::string details;
 	crypto::DerivationPath dpath;
 };
 
-struct KeychainDirectoryMeta {
+struct DirectoryMeta {
 	std::string name;
 	std::string details;
 
 	// TODO: directories should have their own root keys derived from master key
 };
 
-struct KeychainDirectory;
+struct Directory;
 
-struct KeychainEntry {
-	using ptr = std::shared_ptr<KeychainEntry>;
+struct Entry {
+	using ptr = std::shared_ptr<Entry>;
 
-	KeychainEntryMeta meta;
-	std::weak_ptr<KeychainDirectory> parent_dir;
+	EntryMeta meta;
+	std::weak_ptr<Directory> parent_dir;
 
-	KeychainEntry(const KeychainEntryMeta &meta, std::weak_ptr<KeychainDirectory> parent_dir) :
+	Entry(const EntryMeta &meta, std::weak_ptr<Directory> parent_dir) :
 	    meta(meta), parent_dir(parent_dir) {}
 };
 
-struct KeychainDirectory {
-	using ptr = std::shared_ptr<KeychainDirectory>;
+struct Directory {
+	using ptr = std::shared_ptr<Directory>;
 
-	KeychainDirectoryMeta meta;
-	// std::weak_ptr<KeychainDirectory> parent;
+	DirectoryMeta meta;
+	// std::weak_ptr<Directory> parent;
 
 	std::vector<ptr> dirs = {};
-	std::vector<KeychainEntry::ptr> entries = {};
+	std::vector<Entry::ptr> entries = {};
 
 	int dir_level;
 	bool is_open = false;
 
-	KeychainDirectory(const KeychainDirectoryMeta &meta, int dir_level) :
-	    meta(meta), dir_level(dir_level) {}
+	Directory(const DirectoryMeta &meta, int dir_level) : meta(meta), dir_level(dir_level) {}
 
-	KeychainDirectory(const KeychainDirectoryMeta &meta, const ptr &parent) :
+	Directory(const DirectoryMeta &meta, const ptr &parent) :
 	    meta(meta), dir_level(parent->dir_level + 1) {}
 };
 
-using AnyKeychainPtr = std::variant<KeychainEntry::ptr, KeychainDirectory::ptr>;
+using AnyKeychainPtr = std::variant<Entry::ptr, Directory::ptr>;
 
-KeychainEntry::ptr deserialize_entry(
-    const nlohmann::json &data, std::weak_ptr<KeychainDirectory> parent);
-KeychainDirectory::ptr deserialize_directory(const nlohmann::json &data, int dir_level);
+Entry::ptr deserialize_entry(const nlohmann::json &data, std::weak_ptr<Directory> parent);
+Directory::ptr deserialize_directory(const nlohmann::json &data, int dir_level);
 
-nlohmann::json serialize_entry(KeychainEntry::ptr entry);
-nlohmann::json serialize_directory(KeychainDirectory::ptr dir);
+nlohmann::json serialize_entry(Entry::ptr entry);
+nlohmann::json serialize_directory(Directory::ptr dir);
 
-std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root);
+std::vector<AnyKeychainPtr> flatten_dirs(Directory::ptr root);
+
+} // namespace keychain

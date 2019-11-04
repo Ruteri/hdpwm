@@ -17,10 +17,10 @@ struct DirectoryFormResult {
 };
 
 KeychainMainScreen::KeychainMainScreen(
-    WindowManager *wmanager, std::unique_ptr<Keychain> keychain) :
+    WindowManager *wmanager, std::unique_ptr<keychain::Keychain> kc) :
     ScreenController(wmanager),
-    keychain(std::move(keychain)) {
-	keychain_root_dir = this->keychain->get_root_dir();
+    m_keychain(std::move(kc)) {
+	keychain_root_dir = this->m_keychain->get_root_dir();
 	flat_entries_cache = flatten_dirs(keychain_root_dir);
 }
 
@@ -40,7 +40,7 @@ void KeychainMainScreen::m_init() {
 
 	this->header = newwin(1, this->maxcols, 0, 0);
 
-	auto data_string_path = this->keychain->get_data_dir_path();
+	auto data_string_path = this->m_keychain->get_data_dir_path();
 	mvwaddstr(this->header, 0, 0, "Browsing ");
 	waddstr(this->header, data_string_path.c_str());
 
@@ -75,13 +75,13 @@ void KeychainMainScreen::m_cleanup() {
 
 namespace {
 
-auto draw_keychain_directory(WINDOW *win, int row, KeychainDirectory::ptr dir) {
+auto draw_keychain_directory(WINDOW *win, int row, keychain::Directory::ptr dir) {
 	std::string to_print = dir->is_open ? "-" : "+";
 	to_print += dir->meta.name;
 	mvwaddstr(win, row + 1, 1 + dir->dir_level, to_print.c_str());
 }
 
-auto draw_keychain_entry(WINDOW *win, int row, KeychainEntry::ptr entry) {
+auto draw_keychain_entry(WINDOW *win, int row, keychain::Entry::ptr entry) {
 	if (auto pd = entry->parent_dir.lock()) {
 		mvwaddstr(win, row + 1, 2 + pd->dir_level, entry->meta.name.c_str());
 	}
@@ -103,8 +103,9 @@ void KeychainMainScreen::draw_entries_box() {
 		std::visit(
 		    overloaded{
 		        [this, i](
-		            KeychainDirectory::ptr dir) { draw_keychain_directory(this->main, i, dir); },
-		        [this, i](KeychainEntry::ptr entry) { draw_keychain_entry(this->main, i, entry); },
+		            keychain::Directory::ptr dir) { draw_keychain_directory(this->main, i, dir); },
+		        [this, i](
+		            keychain::Entry::ptr entry) { draw_keychain_entry(this->main, i, entry); },
 		    },
 		    flat_entries_cache[i]);
 
@@ -119,8 +120,8 @@ void KeychainMainScreen::draw_details_box() {
 
 	std::visit(
 	    overloaded{
-	        [](KeychainDirectory::ptr) { /* TODO (notes? derivation path?) */ },
-	        [this](KeychainEntry::ptr entry) {
+	        [](keychain::Directory::ptr) { /* TODO (notes? derivation path?) */ },
+	        [this](keychain::Entry::ptr entry) {
 		        mvwaddstr(this->details, 1, 0, entry->meta.details.c_str());
 	        },
 	    },
@@ -149,19 +150,19 @@ void KeychainMainScreen::m_on_key(int key) {
 	case KEY_RETURN:
 		std::visit(
 		    overloaded{
-		        [this](KeychainDirectory::ptr dir) {
+		        [this](keychain::Directory::ptr dir) {
 			        dir->is_open ^= 0x1;
 			        flat_entries_cache = flatten_dirs(keychain_root_dir);
 		        },
-		        [this](KeychainEntry::ptr entry) { post_entry_view(entry); },
+		        [this](keychain::Entry::ptr entry) { post_entry_view(entry); },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
 	case 'e':
 		std::visit(
 		    overloaded{
-		        [this](KeychainDirectory::ptr dir) { post_dir_edit(dir); },
-		        [this](KeychainEntry::ptr entry) { post_entry_edit(entry); },
+		        [this](keychain::Directory::ptr dir) { post_dir_edit(dir); },
+		        [this](keychain::Entry::ptr entry) { post_entry_edit(entry); },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
@@ -189,24 +190,24 @@ void KeychainMainScreen::post_entry_form() {
 		}
 
 		// TODO(mmorusiewicz): generate entry using keychain
-		auto dpath = keychain->get_next_derivation_path();
-		KeychainEntryMeta new_entry{entry_result->name, entry_result->details, dpath};
+		auto dpath = m_keychain->get_next_derivation_path();
+		keychain::EntryMeta new_entry{entry_result->name, entry_result->details, dpath};
 
 		std::visit(
 		    overloaded{
-		        [this, &new_entry](KeychainDirectory::ptr dir) {
+		        [this, &new_entry](keychain::Directory::ptr dir) {
 			        dir->is_open = true;
-			        dir->entries.push_back(std::make_shared<KeychainEntry>(new_entry, dir));
+			        dir->entries.push_back(std::make_shared<keychain::Entry>(new_entry, dir));
 		        },
-		        [this, &new_entry](KeychainEntry::ptr entry) {
+		        [this, &new_entry](keychain::Entry::ptr entry) {
 			        if (auto pd = entry->parent_dir.lock()) {
-				        pd->entries.push_back(std::make_shared<KeychainEntry>(new_entry, pd));
+				        pd->entries.push_back(std::make_shared<keychain::Entry>(new_entry, pd));
 			        }
 		        },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 
-		keychain->save_entries(keychain_root_dir);
+		m_keychain->save_entries(keychain_root_dir);
 
 		state = State::Browsing;
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
@@ -249,25 +250,25 @@ void KeychainMainScreen::post_directory_form() {
 		}
 
 		// TODO(mmorusiewicz): generate entry using keychain
-		KeychainDirectoryMeta new_dir{dir_result->name, ""};
+		keychain::DirectoryMeta new_dir{dir_result->name, ""};
 
 		std::visit(
 		    overloaded{
-		        [this, &new_dir](KeychainDirectory::ptr dir) {
+		        [this, &new_dir](keychain::Directory::ptr dir) {
 			        dir->is_open = true;
 			        dir->dirs.push_back(
-			            std::make_shared<KeychainDirectory>(new_dir, dir->dir_level + 1));
+			            std::make_shared<keychain::Directory>(new_dir, dir->dir_level + 1));
 		        },
-		        [this, &new_dir](KeychainEntry::ptr entry) {
+		        [this, &new_dir](keychain::Entry::ptr entry) {
 			        if (auto pd = entry->parent_dir.lock()) {
 				        pd->dirs.push_back(
-				            std::make_shared<KeychainDirectory>(new_dir, pd->dir_level + 1));
+				            std::make_shared<keychain::Directory>(new_dir, pd->dir_level + 1));
 			        }
 		        },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 
-		keychain->save_entries(keychain_root_dir);
+		m_keychain->save_entries(keychain_root_dir);
 		state = State::Browsing;
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
@@ -291,7 +292,7 @@ void KeychainMainScreen::post_directory_form() {
 	wmanager->push_controller(std::move(directory_form_controller));
 }
 
-void KeychainMainScreen::post_entry_view(KeychainEntry::ptr entry) {
+void KeychainMainScreen::post_entry_view(keychain::Entry::ptr entry) {
 	auto on_form_done = [this]() {
 		state = State::Browsing;
 		this->wmanager->pop_controller();
@@ -304,7 +305,7 @@ void KeychainMainScreen::post_entry_view(KeychainEntry::ptr entry) {
 
 	entry_view_form->add_label(Point{2, 0}, "Secret: ");
 	entry_view_form->add_output(std::make_unique<SensitiveOutputHandler>(
-	    Point{2, 8}, keychain->derive_secret(entry->meta.dpath)));
+	    Point{2, 8}, m_keychain->derive_secret(entry->meta.dpath)));
 
 	entry_view_form->add_label(Point{3, 0}, "Details: " + entry->meta.details);
 
@@ -312,7 +313,7 @@ void KeychainMainScreen::post_entry_view(KeychainEntry::ptr entry) {
 	wmanager->push_controller(std::move(entry_view_form));
 }
 
-void KeychainMainScreen::post_dir_edit(KeychainDirectory::ptr dir) {
+void KeychainMainScreen::post_dir_edit(keychain::Directory::ptr dir) {
 	auto on_form_done = [this]() {
 		state = State::Browsing;
 		this->wmanager->pop_controller();
@@ -335,7 +336,7 @@ void KeychainMainScreen::post_dir_edit(KeychainDirectory::ptr dir) {
 	wmanager->push_controller(std::move(dir_edit_form));
 }
 
-void KeychainMainScreen::post_entry_edit(KeychainEntry::ptr entry) {
+void KeychainMainScreen::post_entry_edit(keychain::Entry::ptr entry) {
 	auto on_form_done = [this]() {
 		state = State::Browsing;
 		this->wmanager->pop_controller();

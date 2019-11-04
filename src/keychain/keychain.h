@@ -1,5 +1,6 @@
 #pragma once
 
+#include <src/keychain/db.h>
 #include <src/keychain/keychain_entry.h>
 
 #include <src/crypto/structs.h>
@@ -7,20 +8,18 @@
 
 #include <filesystem>
 
-namespace leveldb {
-class DB;
-}
+namespace keychain {
 
 class Keychain {
   protected:
 	std::filesystem::path data_path;
 
-	leveldb::DB *db;
+	std::unique_ptr<DB> db;
 	crypto::TimedEncryptionKey tec;
 
   public:
 	Keychain() = default;
-	~Keychain();
+	~Keychain() = default;
 
 	Keychain(const Keychain &) = delete;
 	Keychain &operator=(const Keychain &) = delete;
@@ -33,13 +32,15 @@ class Keychain {
 	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash pw_hash);
 
 	std::string get_data_dir_path() const { return data_path.string(); }
-	KeychainDirectory::ptr get_root_dir() const;
+	Directory::ptr get_root_dir() const;
 
 	crypto::DerivationPath get_next_derivation_path();
 
-	void save_entries(KeychainDirectory::ptr root);
+	void save_entries(Directory::ptr root);
 
 	static utils::sensitive_string encode_secret(
 	    unsigned char *in_data, size_t in_size, size_t out_size);
 	utils::sensitive_string derive_secret(const crypto::DerivationPath &dpath);
 };
+
+} // namespace keychain

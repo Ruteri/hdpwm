@@ -20,7 +20,7 @@ class TimedEncryptionKey {
 	TimedEncryptionKey &operator=(TimedEncryptionKey &&other) = default;
 	TimedEncryptionKey(TimedEncryptionKey &&other) = default;
 
-	explicit TimedEncryptionKey(crypto::PasswordHash &&pw) : valid(true), ec(std::move(pw)) {}
+	explicit TimedEncryptionKey(crypto::PasswordHash pw) : valid(true), ec(std::move(pw)) {}
 
 	// TODO: should lock
 	const PasswordHash &getPasswordHash() { return ec; }

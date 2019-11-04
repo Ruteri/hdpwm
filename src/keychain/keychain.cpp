@@ -1,11 +1,16 @@
 #include <src/keychain/keychain.h>
 
+#include <src/keychain/db.h>
+
 #include <external/nlohmann/json_single_include.h>
-#include <leveldb/db.h>
 using json = nlohmann::json;
+
+#include <leveldb/db.h>
 
 #include <list>
 #include <stdexcept>
+
+namespace keychain {
 
 constexpr char DB_KEY_SEED[] = "seed";
 constexpr char DB_KEY_DPATH[] = "dpath";
@@ -13,21 +18,17 @@ constexpr char DB_KEY_ENTRIES[] = "entries";
 
 Keychain::Keychain(Keychain &&other) {
 	this->data_path = std::move(other.data_path);
-	this->db = other.db;
+	this->db = std::move(other.db);
 	other.db = nullptr;
 	this->tec = std::move(other.tec);
 }
 
 Keychain &Keychain::operator=(Keychain &&other) {
 	this->data_path = std::move(other.data_path);
-	this->db = other.db;
+	this->db = std::move(other.db);
 	other.db = nullptr;
 	this->tec = std::move(other.tec);
 	return *this;
-}
-
-Keychain::~Keychain() {
-	if (this->db) delete this->db;
 }
 
 std::string get_default_db_layout() {
@@ -50,8 +51,8 @@ std::unique_ptr<Keychain> Keychain::initialize_with_seed(
 	}
 
 	auto db_path = kc->data_path / "db";
-	leveldb::Status status = leveldb::DB::Open(options, db_path.string(), &kc->db);
-	if (!status.ok()) {
+	kc->db = DB::Open(options, db_path.string());
+	if (!kc->db) {
 		throw std::runtime_error("could not initialize db");
 	}
 
@@ -82,15 +83,15 @@ std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::Pas
 	kc->tec = crypto::TimedEncryptionKey(std::move(pw_hash));
 
 	auto db_path = kc->data_path / "db";
-	leveldb::Status status = leveldb::DB::Open(leveldb::Options(), db_path.string(), &kc->db);
-	if (!status.ok()) {
+	kc->db = DB::Open(leveldb::Options(), db_path.string());
+	if (!kc->db) {
 		throw std::runtime_error("could not open db");
 	}
 
 	return kc;
 }
 
-KeychainDirectory::ptr Keychain::get_root_dir() const {
+Directory::ptr Keychain::get_root_dir() const {
 	std::string db_entries;
 	if (auto s = db->Get(leveldb::ReadOptions(), DB_KEY_ENTRIES, &db_entries); !s.ok()) {
 		throw std::runtime_error("could not get entries from db");
@@ -119,7 +120,7 @@ crypto::DerivationPath Keychain::get_next_derivation_path() {
 	return {current_seed};
 }
 
-void Keychain::save_entries(KeychainDirectory::ptr root) {
+void Keychain::save_entries(Directory::ptr root) {
 	json new_entries = serialize_directory(root);
 	if (auto s = db->Put(leveldb::WriteOptions(), DB_KEY_ENTRIES, new_entries.dump()); !s.ok()) {
 		throw std::runtime_error("could not save entries");
@@ -160,3 +161,5 @@ utils::sensitive_string Keychain::derive_secret(const crypto::DerivationPath &dp
 
 	return Keychain::encode_secret(derived_seed.data(), derived_seed.size(), 10);
 }
+
+} // namespace keychain

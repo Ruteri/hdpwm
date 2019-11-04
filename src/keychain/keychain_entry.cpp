@@ -3,8 +3,10 @@
 #include <external/nlohmann/json_single_include.h>
 using json = nlohmann::json;
 
-KeychainEntry::ptr deserialize_entry(const json &data, std::weak_ptr<KeychainDirectory> parent) {
-	KeychainEntryMeta meta{
+namespace keychain {
+
+Entry::ptr deserialize_entry(const json &data, std::weak_ptr<Directory> parent) {
+	EntryMeta meta{
 	    data["name"].get<std::string>(),
 	    data["details"].get<std::string>(),
 	    {
@@ -12,16 +14,16 @@ KeychainEntry::ptr deserialize_entry(const json &data, std::weak_ptr<KeychainDir
 	    },
 	};
 
-	return std::make_shared<KeychainEntry>(meta, parent);
+	return std::make_shared<Entry>(meta, parent);
 }
 
-KeychainDirectory::ptr deserialize_directory(const json &data, int dir_level) {
-	KeychainDirectoryMeta meta{
+Directory::ptr deserialize_directory(const json &data, int dir_level) {
+	DirectoryMeta meta{
 	    data["name"].get<std::string>(),
 	    data["details"].get<std::string>(),
 	};
 
-	auto dir = std::make_shared<KeychainDirectory>(meta, dir_level);
+	auto dir = std::make_shared<Directory>(meta, dir_level);
 
 	for (const json &entry : data["entries"]) {
 		dir->entries.push_back(deserialize_entry(entry, dir));
@@ -34,12 +36,12 @@ KeychainDirectory::ptr deserialize_directory(const json &data, int dir_level) {
 	return dir;
 }
 
-json serialize_entry(KeychainEntry::ptr entry) {
+json serialize_entry(Entry::ptr entry) {
 	return {{"name", entry->meta.name}, {"details", entry->meta.details},
 	    {"derivation_path", entry->meta.dpath.seed}};
 }
 
-json serialize_directory(KeychainDirectory::ptr dir) {
+json serialize_directory(Directory::ptr dir) {
 	json entries = json::array();
 	for (const auto &entry : dir->entries) {
 		entries.push_back(serialize_entry(entry));
@@ -56,7 +58,7 @@ json serialize_directory(KeychainDirectory::ptr dir) {
 
 namespace {
 
-void process_flatten_dir(std::list<AnyKeychainPtr> *to_visit, KeychainDirectory::ptr dir) {
+void process_flatten_dir(std::list<AnyKeychainPtr> *to_visit, Directory::ptr dir) {
 	if (!dir->is_open) {
 		return;
 	}
@@ -70,7 +72,7 @@ void process_flatten_dir(std::list<AnyKeychainPtr> *to_visit, KeychainDirectory:
 
 } // namespace
 
-std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root) {
+std::vector<AnyKeychainPtr> flatten_dirs(Directory::ptr root) {
 	std::vector<AnyKeychainPtr> rv;
 	std::list<AnyKeychainPtr> to_visit{root};
 
@@ -80,11 +82,12 @@ std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root) {
 
 		rv.push_back(c_node_v);
 
-		std::visit(
-		    overloaded{[](KeychainEntry::ptr) {},
-		        [&to_visit](KeychainDirectory::ptr dir) { process_flatten_dir(&to_visit, dir); }},
+		std::visit(overloaded{[](Entry::ptr) {},
+		               [&to_visit](Directory::ptr dir) { process_flatten_dir(&to_visit, dir); }},
 		    c_node_v);
 	}
 
 	return rv;
 }
+
+} // namespace keychain

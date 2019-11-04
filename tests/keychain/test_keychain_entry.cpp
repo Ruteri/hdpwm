@@ -5,14 +5,24 @@ using json = nlohmann::json;
 
 #include <external/catch2/catch.hpp>
 
-/*
-std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root);
-*/
+using keychain::EntryMeta;
+using keychain::Entry;
+using keychain::DirectoryMeta;
+using keychain::Directory;
+using keychain::AnyKeychainPtr;
+
+using keychain::deserialize_entry;
+using keychain::serialize_entry;
+
+using keychain::deserialize_directory;
+using keychain::serialize_directory;
+
+using keychain::flatten_dirs;
 
 TEST_CASE( "deserializing entries works as intended", "[keychain_entry_deser]" ) {
 	json data = json::parse(R"({ "name": "name", "details": "details", "derivation_path": 5 })");
 
-	auto parent_ptr = std::make_shared<KeychainDirectory>(KeychainDirectoryMeta{}, 0);
+	auto parent_ptr = std::make_shared<Directory>(DirectoryMeta{}, 0);
 	auto entry = deserialize_entry(data, parent_ptr);
 
 	REQUIRE( entry->meta.name == "name" );
@@ -62,7 +72,7 @@ TEST_CASE( "flattening works as intended", "[keychain_flatten]" ) {
 	{
 		std::vector<AnyKeychainPtr> flatten_result = flatten_dirs(root);
 		REQUIRE( flatten_result.size() == 1 );
-		auto flattened_root = std::get<KeychainDirectory::ptr>(flatten_result[0]);
+		auto flattened_root = std::get<Directory::ptr>(flatten_result[0]);
 		REQUIRE( flattened_root->meta.name == "dir1" );
 	}
 
@@ -71,13 +81,13 @@ TEST_CASE( "flattening works as intended", "[keychain_flatten]" ) {
 		std::vector<AnyKeychainPtr> flatten_result = flatten_dirs(root);
 		REQUIRE( flatten_result.size() == 3 );
 
-		auto flattened_root = std::get<KeychainDirectory::ptr>(flatten_result[0]);
+		auto flattened_root = std::get<Directory::ptr>(flatten_result[0]);
 		REQUIRE( flattened_root->meta.name == "dir1" );
 
-		auto flattened_dir2 = std::get<KeychainDirectory::ptr>(flatten_result[1]);
+		auto flattened_dir2 = std::get<Directory::ptr>(flatten_result[1]);
 		REQUIRE( flattened_dir2->meta.name == "dir2" );
 
-		auto flattened_entry2 = std::get<KeychainEntry::ptr>(flatten_result[2]);
+		auto flattened_entry2 = std::get<Entry::ptr>(flatten_result[2]);
 		REQUIRE( flattened_entry2->meta.name == "entry2" );
 	}
 
@@ -88,16 +98,16 @@ TEST_CASE( "flattening works as intended", "[keychain_flatten]" ) {
 		std::vector<AnyKeychainPtr> flatten_result = flatten_dirs(root);
 		REQUIRE( flatten_result.size() == 4 );
 
-		auto flattened_root = std::get<KeychainDirectory::ptr>(flatten_result[0]);
+		auto flattened_root = std::get<Directory::ptr>(flatten_result[0]);
 		REQUIRE( flattened_root->meta.name == "dir1" );
 
-		auto flattened_dir2 = std::get<KeychainDirectory::ptr>(flatten_result[1]);
+		auto flattened_dir2 = std::get<Directory::ptr>(flatten_result[1]);
 		REQUIRE( flattened_dir2->meta.name == "dir2" );
 
-		auto flattened_entry1 = std::get<KeychainEntry::ptr>(flatten_result[2]);
+		auto flattened_entry1 = std::get<Entry::ptr>(flatten_result[2]);
 		REQUIRE( flattened_entry1->meta.name == "entry1" );
 
-		auto flattened_entry2 = std::get<KeychainEntry::ptr>(flatten_result[3]);
+		auto flattened_entry2 = std::get<Entry::ptr>(flatten_result[3]);
 		REQUIRE( flattened_entry2->meta.name == "entry2" );
 	}
 }

@@ -11,9 +11,9 @@
 class KeychainMainScreen : public ScreenController {
 	enum class State { Browsing, Creating, Editing } state = State::Browsing;
 
-	std::unique_ptr<Keychain> keychain;
-	KeychainDirectory::ptr keychain_root_dir;
-	std::vector<AnyKeychainPtr> flat_entries_cache;
+	std::unique_ptr<keychain::Keychain> m_keychain;
+	keychain::Directory::ptr keychain_root_dir;
+	std::vector<keychain::AnyKeychainPtr> flat_entries_cache;
 	int c_selected_index = 0;
 
 	int maxlines, maxcols;
@@ -22,9 +22,9 @@ class KeychainMainScreen : public ScreenController {
 	void post_entry_form();
 	void post_directory_form();
 
-	void post_entry_view(KeychainEntry::ptr entry);
-	void post_dir_edit(KeychainDirectory::ptr dir);
-	void post_entry_edit(KeychainEntry::ptr entry);
+	void post_entry_view(keychain::Entry::ptr entry);
+	void post_dir_edit(keychain::Directory::ptr dir);
+	void post_entry_edit(keychain::Entry::ptr entry);
 
 	void draw_entries_box();
 	void draw_details_box();
@@ -35,6 +35,6 @@ class KeychainMainScreen : public ScreenController {
 	void m_on_key(int key) override;
 
   public:
-	KeychainMainScreen(WindowManager *, std::unique_ptr<Keychain>);
+	KeychainMainScreen(WindowManager *, std::unique_ptr<keychain::Keychain>);
 	~KeychainMainScreen();
 };
