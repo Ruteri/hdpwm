@@ -1,12 +1,9 @@
 #pragma once
 
+#include <src/cli/fwd.h>
 #include <src/cli/utils.h>
 
 #include <string>
-
-/* forward declare as ncurses define OK which breaks leveldb */
-struct _win_st;
-typedef struct _win_st WINDOW;
 
 class OutputHandler {
 	Point origin;

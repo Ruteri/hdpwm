@@ -1,5 +1,5 @@
 #include <src/cli/manager.h>
-#include <src/cli/screens.h>
+#include <src/cli/start_screen.h>
 
 int main() {
 

@@ -1,10 +1,22 @@
-#include <src/cli/screens.h>
+#include <src/cli/form_controller.h>
+
+#include <curses.h>
 
 FormController::FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
     std::function<void()> on_done) :
     ScreenController(wmanager),
     parent(parent), window(window), on_done(on_done) {
 	m_cursor_prev_state = curs_set(2);
+}
+
+void FormController::m_init() {
+	if (parent) parent->init();
+	curs_set(2);
+}
+
+void FormController::m_cleanup() {
+	curs_set(m_cursor_prev_state);
+	if (parent) parent->cleanup();
 }
 
 void FormController::m_draw() {
@@ -29,7 +41,7 @@ void FormController::m_on_key(int key) {
 	switch (state) {
 	case State::IGNORING:
 	case State::DONE:
-		parent->on_key(key);
+		if (parent) parent->on_key(key);
 		break;
 	case State::PROCESSING:
 		if (fields.empty()) return;

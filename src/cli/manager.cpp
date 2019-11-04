@@ -1,8 +1,9 @@
 #include <src/cli/manager.h>
-#include <src/cli/screens.h>
+#include <src/cli/screen_controller.h>
 
 #include <curses.h>
 #include <signal.h>
+#include <locale.h>
 
 #include <chrono>
 #include <stack>
@@ -19,7 +20,14 @@ void resizeHandler(int) {
 } // namespace
 
 WindowManager::WindowManager() {
+	setlocale(LC_ALL,"");
 	initscr();
+	noecho();
+	cbreak();
+	keypad(stdscr, TRUE);
+	nodelay(stdscr, TRUE);
+	curs_set(0);
+
 	g_manager = this;
 	signal(SIGWINCH, resizeHandler);
 }
@@ -50,10 +58,6 @@ void WindowManager::stop() { push_event({EVT::EV_QUIT, {}}); }
 void WindowManager::on_resize() { push_event({EVT::EV_RESIZE, {}}); }
 
 void WindowManager::getch_loop() {
-	noecho();
-	cbreak();
-	keypad(stdscr, TRUE);
-	nodelay(stdscr, TRUE);
 
 	for (; should_getch;) {
 		int ch = getch();
@@ -100,6 +104,7 @@ void WindowManager::run() {
 				current_controller->on_resize();
 				break;
 			case EVT::EV_SET_CONTROLLER:
+				current_controller->cleanup();
 				controller_stack.pop();
 				controller_stack.push(std::get<std::shared_ptr<ScreenController>>(ev.data));
 				current_controller = controller_stack.top();
@@ -113,6 +118,7 @@ void WindowManager::run() {
 				current_controller->init();
 				break;
 			case EVT::EV_POP_CONTROLLER:
+				current_controller->cleanup();
 				controller_stack.pop();
 				if (!controller_stack.empty()) controller_stack.top()->init();
 				break;

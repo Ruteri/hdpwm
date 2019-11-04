@@ -13,8 +13,6 @@ BasicMenu::BasicMenu(std::vector<BasicMenuEntry> links, Point pos) :
 void BasicMenu::draw() { return this->draw(stdscr); }
 
 void BasicMenu::draw(WINDOW *scr) {
-	curs_set(0);
-
 	int maxr, maxc;
 	getmaxyx(scr, maxr, maxc);
 

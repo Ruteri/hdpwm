@@ -1,4 +1,9 @@
-#include <src/cli/screens.h>
+#include <src/cli/keychain_main_screen.h>
+
+#include <src/cli/error_screen.h>
+#include <src/cli/form_controller.h>
+
+#include <curses.h>
 
 #include <list>
 
@@ -11,68 +16,17 @@ struct DirectoryFormResult {
 	std::string name;
 };
 
-// helper for visitors
-template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template <class... Ts> overloaded(Ts...)->overloaded<Ts...>;
-
-KeychainDirectoryNode::KeychainDirectoryNode(
-    const KeychainDirectory &d, KeychainDirectoryNode *parent) {
-	this->name = d.name;
-	this->parent = parent;
-	this->dir_level = parent ? parent->dir_level + 1 : 0;
-	for (auto &entry : d.entries) {
-		this->entries.emplace_back(entry, this);
-	}
-
-	// For now, recurse (it's not deep and done only on startup)
-	for (auto &dir : d.dirs) {
-		this->dirs.emplace_back(dir, this);
-	}
-}
-
-std::vector<std::variant<KeychainDirectoryNode *, KeychainEntryNode *>> flatten_dirs(
-    KeychainDirectoryNode *root) {
-	std::vector<std::variant<KeychainDirectoryNode *, KeychainEntryNode *>> rv;
-	std::list<std::variant<KeychainDirectoryNode *, KeychainEntryNode *>> to_visit = {root};
-
-	while (!to_visit.empty()) {
-		std::variant<KeychainDirectoryNode *, KeychainEntryNode *> c_node_v = to_visit.front();
-		to_visit.pop_front();
-
-		rv.push_back(c_node_v);
-
-		std::visit(overloaded{[&rv](KeychainEntryNode *) {},
-		               [&rv, &to_visit](KeychainDirectoryNode *dir) {
-			               if (!dir->is_open) {
-				               return;
-			               }
-
-			               for (int i = dir->entries.size() - 1; i >= 0; --i) {
-				               to_visit.push_front(&(dir->entries[i]));
-			               }
-			               for (int i = dir->dirs.size() - 1; i >= 0; --i) {
-				               to_visit.push_front(&(dir->dirs[i]));
-			               }
-		               }},
-		    c_node_v);
-	}
-
-	return rv;
-}
-
 KeychainMainScreen::KeychainMainScreen(
     WindowManager *wmanager, std::unique_ptr<Keychain> keychain) :
     ScreenController(wmanager),
     keychain(std::move(keychain)) {
-	KeychainDirectory root_dir = this->keychain->get_root_dir();
-	keychain_root_dir = new KeychainDirectoryNode(root_dir, nullptr);
-	keychain_root_dir->is_open = true;
-
+	keychain_root_dir = this->keychain->get_root_dir();
 	flat_entries_cache = flatten_dirs(keychain_root_dir);
 }
+
 KeychainMainScreen::~KeychainMainScreen() {
 	cleanup();
-	if (keychain_root_dir) delete keychain_root_dir;
+	if (keychain_root_dir) keychain_root_dir.reset();
 }
 
 // TODO(mmorusiewicz): should be called on screen resize
@@ -135,13 +89,13 @@ void KeychainMainScreen::m_draw() {
 
 		std::visit(
 		    overloaded{
-		        [this, i](KeychainDirectoryNode *dir) {
+		        [this, i](KeychainDirectory *dir) {
 			        std::string to_print = dir->is_open ? "-" : "+";
-			        to_print += dir->name;
+			        to_print += dir->meta.name;
 			        mvwaddstr(this->main, i + 1, 1 + dir->dir_level, to_print.c_str());
 		        },
-		        [this, i](KeychainEntryNode *entry) {
-			        std::string to_print = entry->title;
+		        [this, i](KeychainEntry *entry) {
+			        std::string to_print = entry->meta.name;
 			        mvwaddstr(
 			            this->main, i + 1, 2 + entry->parent_dir->dir_level, to_print.c_str());
 		        },
@@ -164,8 +118,8 @@ void KeychainMainScreen::m_draw() {
 		std::string to_print;
 		std::visit(
 		    overloaded{
-		        [&to_print](KeychainDirectoryNode *) {},
-		        [&to_print](KeychainEntryNode *entry) { to_print = entry->details; },
+		        [&to_print](KeychainDirectory *) {},
+		        [&to_print](KeychainEntry *entry) { to_print = entry->meta.details; },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 
@@ -191,11 +145,11 @@ void KeychainMainScreen::m_on_key(int key) {
 	case KEY_RETURN:
 		std::visit(
 		    overloaded{
-		        [this](KeychainDirectoryNode *dir) {
+		        [this](KeychainDirectory *dir) {
 			        dir->is_open ^= 0x1;
 			        flat_entries_cache = flatten_dirs(keychain_root_dir);
 		        },
-		        [this](KeychainEntryNode *) {
+		        [this](KeychainEntry *) {
 			        // TODO(mmorusiewicz): move to edit screen (or sth like that)
 		        },
 		    },
@@ -218,7 +172,6 @@ void KeychainMainScreen::post_entry_form() {
 
 	auto on_form_done = [this, entry_result]() {
 		this->wmanager->pop_controller();
-		m_entry_form_controller.reset();
 
 		if (!entry_result || entry_result->name.empty()) {
 			this->wmanager->set_controller(std::make_shared<ErrorScreen>(
@@ -226,15 +179,15 @@ void KeychainMainScreen::post_entry_form() {
 		}
 
 		// TODO(mmorusiewicz): generate entry using keychain
-		KeychainEntry new_entry{entry_result->name, entry_result->details};
+		KeychainEntryMeta new_entry{entry_result->name, entry_result->details, {2}};
 
 		std::visit(
 		    overloaded{
-		        [this, &new_entry](KeychainDirectoryNode *dir) {
+		        [this, &new_entry](KeychainDirectory *dir) {
 			        dir->is_open = true;
 			        dir->entries.push_back({new_entry, dir});
 		        },
-		        [this, &new_entry](KeychainEntryNode *entry) {
+		        [this, &new_entry](KeychainEntry *entry) {
 			        entry->parent_dir->entries.push_back({new_entry, entry->parent_dir});
 		        },
 		    },
@@ -242,7 +195,7 @@ void KeychainMainScreen::post_entry_form() {
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
-	m_entry_form_controller =
+	auto entry_form_controller =
 	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
 
 	auto on_name_accept = [entry_result](std::string &name) -> bool {
@@ -255,10 +208,10 @@ void KeychainMainScreen::post_entry_form() {
 		return true;
 	};
 
-	m_entry_form_controller->add_field<StringInputHandler>("Entry name: ", on_name_accept);
-	m_entry_form_controller->add_field<StringInputHandler>("Details: ", on_details_accept);
+	entry_form_controller->add_field<StringInputHandler>("Entry name: ", on_name_accept);
+	entry_form_controller->add_field<StringInputHandler>("Details: ", on_details_accept);
 
-	wmanager->push_controller(m_entry_form_controller);
+	wmanager->push_controller(entry_form_controller);
 }
 
 void KeychainMainScreen::post_directory_form() {
@@ -266,7 +219,6 @@ void KeychainMainScreen::post_directory_form() {
 
 	auto on_form_done = [this, dir_result]() {
 		this->wmanager->pop_controller();
-		m_directory_form_controller.reset();
 
 		if (!dir_result || dir_result->name.empty()) {
 			this->wmanager->set_controller(std::make_shared<ErrorScreen>(
@@ -274,15 +226,15 @@ void KeychainMainScreen::post_directory_form() {
 		}
 
 		// TODO(mmorusiewicz): generate entry using keychain
-		KeychainDirectory new_dir{dir_result->name, {}, {}};
+		KeychainDirectoryMeta new_dir{dir_result->name, ""};
 
 		std::visit(
 		    overloaded{
-		        [this, &new_dir](KeychainDirectoryNode *dir) {
+		        [this, &new_dir](KeychainDirectory *dir) {
 			        dir->is_open = true;
 			        dir->dirs.push_back({new_dir, dir});
 		        },
-		        [this, &new_dir](KeychainEntryNode *entry) {
+		        [this, &new_dir](KeychainEntry *entry) {
 			        entry->parent_dir->dirs.push_back({new_dir, entry->parent_dir});
 		        },
 		    },
@@ -290,7 +242,7 @@ void KeychainMainScreen::post_directory_form() {
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
-	m_directory_form_controller =
+	auto directory_form_controller =
 	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
 
 	auto on_name_accept = [dir_result](std::string &name) -> bool {
@@ -298,7 +250,7 @@ void KeychainMainScreen::post_directory_form() {
 		return !name.empty();
 	};
 
-	m_directory_form_controller->add_field<StringInputHandler>("Directory name: ", on_name_accept);
+	directory_form_controller->add_field<StringInputHandler>("Directory name: ", on_name_accept);
 
-	wmanager->push_controller(m_directory_form_controller);
+	wmanager->push_controller(directory_form_controller);
 }

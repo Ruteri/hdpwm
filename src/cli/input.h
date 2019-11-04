@@ -1,15 +1,12 @@
 #pragma once
 
+#include <src/cli/fwd.h>
 #include <src/cli/utils.h>
 
 #include <src/crypto/utils.h>
 
 #include <functional>
 #include <memory>
-
-/* forward declare as ncurses define OK which breaks leveldb */
-struct _win_st;
-typedef struct _win_st WINDOW;
 
 class InputHandler {
 	virtual void on_backspace() = 0;
