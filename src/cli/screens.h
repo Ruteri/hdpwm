@@ -124,10 +124,34 @@ public:
 	ImportKeychainScreen(WindowManager *wmanager);
 };
 
+struct KeychainDirectoryNode;
+
+struct KeychainEntryNode {
+	std::string title;
+	std::string details;
+
+	KeychainDirectoryNode* parent_dir;
+	KeychainEntryNode(const KeychainEntry &entry, KeychainDirectoryNode* parent_dir): title(entry.title), details(entry.details), parent_dir(parent_dir) {}
+};
+
+struct KeychainDirectoryNode {
+	std::string name;
+
+	KeychainDirectoryNode *parent;
+	std::vector<KeychainDirectoryNode> dirs;
+	std::vector<KeychainEntryNode> entries;
+
+	int dir_level = 0;
+	bool is_open = false;
+
+	KeychainDirectoryNode(const KeychainDirectory &d, KeychainDirectoryNode *parent);
+};
+
 class KeychainMainScreen: public ScreenController {
 	std::unique_ptr<Keychain> keychain;
-	std::vector<KeychainEntry> keychain_entries;
-	int selected_entry = 0;
+	KeychainDirectoryNode *keychain_root_dir;
+	std::vector<std::variant<KeychainDirectoryNode*, KeychainEntryNode*>> flat_entries_cache;
+	int c_selected_index = 0;
 
 	int maxlines, maxcols;
 	WINDOW *header, *main, *details, *footer;
@@ -139,4 +163,5 @@ class KeychainMainScreen: public ScreenController {
 
 public:
 	KeychainMainScreen(WindowManager*, std::unique_ptr<Keychain>);
+	~KeychainMainScreen();
 };

@@ -1,6 +1,64 @@
 #include <src/cli/screens.h>
 
-KeychainMainScreen::KeychainMainScreen(WindowManager *wmanager, std::unique_ptr<Keychain> keychain): ScreenController(wmanager), keychain(std::move(keychain)), keychain_entries(this->keychain->get_entries()) {}
+#include <list>
+
+// helper for visitors
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+KeychainDirectoryNode::KeychainDirectoryNode(const KeychainDirectory &d, KeychainDirectoryNode *parent) {
+	this->name = d.name;
+	this->parent = parent;
+	this->dir_level = parent ? parent->dir_level + 1 : 0;
+	for (auto &entry: d.entries) {
+		this->entries.emplace_back(entry, this);
+	}
+
+	// For now, recurse
+	for (auto &dir : d.dirs) {
+		this->dirs.emplace_back(dir, this);
+	}
+}
+
+std::vector<std::variant<KeychainDirectoryNode*, KeychainEntryNode*>> flatten_dirs(KeychainDirectoryNode *root) {
+	std::vector<std::variant<KeychainDirectoryNode*, KeychainEntryNode*>> rv;
+	std::list<std::variant<KeychainDirectoryNode*, KeychainEntryNode*>> to_visit = {root};
+
+	while (!to_visit.empty()) {
+		std::variant<KeychainDirectoryNode*, KeychainEntryNode*> c_node_v = to_visit.front();
+		to_visit.pop_front();
+
+		rv.push_back(c_node_v);
+
+		std::visit(overloaded {
+		[&rv](KeychainEntryNode*) {},
+		[&rv, &to_visit](KeychainDirectoryNode* dir) {
+			if (!dir->is_open) {
+				return;
+			}
+
+			for (int i = dir->entries.size() - 1; i >= 0; --i) {
+				to_visit.push_front(&(dir->entries[i]));
+			}
+			for (int i = dir->dirs.size() - 1; i >= 0; --i) {
+				to_visit.push_front(&(dir->dirs[i]));
+			}
+		}}, c_node_v);
+	}
+
+	return rv;
+}
+
+KeychainMainScreen::KeychainMainScreen(WindowManager *wmanager, std::unique_ptr<Keychain> keychain): ScreenController(wmanager), keychain(std::move(keychain)) {
+	KeychainDirectory root_dir = this->keychain->get_root_dir();
+	keychain_root_dir = new KeychainDirectoryNode(root_dir, nullptr);
+	keychain_root_dir->is_open = true;
+
+	flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+}
+KeychainMainScreen::~KeychainMainScreen() {
+	if (keychain_root_dir) delete keychain_root_dir;
+}
 
 // TODO: should be called on screen resize
 void KeychainMainScreen::m_init() {
@@ -53,39 +111,73 @@ void KeychainMainScreen::m_draw() {
 	/*** entries box ***/
 
 	int max_entries = this->maxlines - 4;
-	int n_to_skip = std::max(0, this->selected_entry - max_entries + 1);
-	for (int i = 0; i < std::min(max_entries, (int) this->keychain_entries.size()); ++i) {
+	int n_to_skip = std::max(0, this->c_selected_index - max_entries + 1);
+
+	for (int i = 0; i < std::min(max_entries, (int) flat_entries_cache.size()); ++i) {
 		wmove(this->main, i+1, 0);
 		wclrtoeol(this->main);
-		if (i + n_to_skip == this->selected_entry) {
+		if (i + n_to_skip == this->c_selected_index) {
 			wattron(this->main, A_STANDOUT);
-			mvwaddstr(this->main, i+1, 2, this->keychain_entries[i + n_to_skip].title.c_str());
+		}
+
+		std::visit(overloaded {
+			[this,i](KeychainDirectoryNode* dir) {
+				std::string to_print = dir->is_open ? "-" : "+";
+				to_print += dir->name;
+				mvwaddstr(this->main, i+1, 1 + dir->dir_level, to_print.c_str());
+			},
+			[this,i](KeychainEntryNode* entry) {
+				std::string to_print = entry->title;
+				mvwaddstr(this->main, i+1, 2 + entry->parent_dir->dir_level, to_print.c_str());
+			},
+		}, flat_entries_cache[i]);
+
+		if (i + n_to_skip == this->c_selected_index) {
 			wattroff(this->main, A_STANDOUT);
-		} else {
-			mvwaddstr(this->main, i+1, 2, this->keychain_entries[i + n_to_skip].title.c_str());
 		}
 	}
 
+	wclrtobot(this->main);
+
 	/*** details box ***/
 
-	wmove(this->details, 1, 0);
-	wclrtoeol(this->details);
-	mvwaddstr(this->details, 1, 0, this->keychain_entries[this->selected_entry].details.c_str());
+	{
+		wmove(this->details, 1, 0);
+		wclrtoeol(this->details);
+
+		std::string to_print;
+		std::visit(overloaded {
+		[&to_print](KeychainDirectoryNode*) {},
+		[&to_print](KeychainEntryNode* entry) { to_print = entry->details; },
+		}, flat_entries_cache[this->c_selected_index]);
+
+		mvwaddstr(this->details, 1, 0, to_print.c_str());
+	}
+
+	wclrtobot(this->details);
 
 	wrefresh(this->main);
 	wrefresh(this->details);
 }
 
 void KeychainMainScreen::m_on_key(int key) {
-
 	switch(key) {
 	case KEY_DOWN:
-		this->selected_entry = (this->selected_entry + 1) % this->keychain_entries.size();
+		this->c_selected_index = (this->c_selected_index + 1 ) % flat_entries_cache.size();
 		break;
 	case KEY_UP:
-		this->selected_entry = (this->keychain_entries.size() + this->selected_entry - 1) % this->keychain_entries.size();
+		this->c_selected_index = this->c_selected_index <= 0 ? flat_entries_cache.size() - 1 : this->c_selected_index - 1;
 		break;
-	case KEY_RIGHT: case KEY_ENTER: case KEY_RETURN:
+	case KEY_ENTER: case KEY_RETURN:
+		std::visit(overloaded {
+		[this](KeychainDirectoryNode* dir) {
+			dir->is_open ^= 0x1;
+			flat_entries_cache = std::move(flatten_dirs(keychain_root_dir));
+		},
+		[this](KeychainEntryNode*) {
+			// TODO: move to edit screen (or sth like that)
+		},
+		}, flat_entries_cache[this->c_selected_index]);
 		break;
 	}
 }

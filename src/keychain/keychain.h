@@ -14,6 +14,12 @@ struct KeychainEntry {
 	// TODO: maybe should hold encrypted secret? Or can be queried from DB each time
 };
 
+struct KeychainDirectory {
+	std::string name;
+	std::vector<KeychainDirectory> dirs;
+	std::vector<KeychainEntry> entries;
+};
+
 class Keychain {
 	std::filesystem::path data_path;
 
@@ -47,7 +53,8 @@ public:
 	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash&& pw_hash);
 
 	std::string get_data_dir_path() const { return data_path.string(); }
-	std::vector<KeychainEntry> get_entries() const {
-		return {{"Stub title", "description of the stub title"}};
+	KeychainDirectory get_root_dir() const {
+		KeychainDirectory id = {"g1", {}, {{ "p1", "d1" }}};
+		return {"/", { id }, {{ "p2", "d2" }}};
 	}
 };
