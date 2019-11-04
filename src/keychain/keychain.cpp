@@ -1,9 +1,30 @@
 #include <src/keychain/keychain.h>
 
+#include <leveldb/db.h>
+
 #include <stdexcept>
 #include <list>
 
 constexpr char DB_KEY_SEED[] = "seed";
+
+Keychain::Keychain(Keychain &&other) {
+	this->data_path = std::move(other.data_path);
+	this->db = other.db;
+	other.db = nullptr;
+	this->tec = std::move(other.tec);
+}
+
+Keychain &Keychain::operator=(Keychain &&other) {
+	this->data_path = std::move(other.data_path);
+	this->db = other.db;
+	other.db = nullptr;
+	this->tec = std::move(other.tec);
+	return *this;
+}
+
+Keychain::~Keychain() {
+	if (this->db) delete this->db;
+}
 
 std::unique_ptr<Keychain> Keychain::initialize_with_seed(
     std::filesystem::path path, crypto::Seed &&seed, crypto::PasswordHash &&pw_hash) {

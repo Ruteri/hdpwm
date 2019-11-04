@@ -3,10 +3,12 @@
 #include <src/crypto/structs.h>
 #include <src/crypto/timed_encryption_key.h>
 
-#include <leveldb/db.h>
-
 #include <filesystem>
 #include <variant>
+
+namespace leveldb {
+	class DB;
+}
 
 // helper for visitors
 template <class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
@@ -62,30 +64,15 @@ class Keychain {
 	leveldb::DB *db;
 	crypto::TimedEncryptionKey tec;
 
+  public:
+	Keychain() = default;
+	~Keychain();
+
 	Keychain(const Keychain &) = delete;
 	Keychain &operator=(const Keychain &) = delete;
 
-  public:
-	Keychain() = default;
-
-	Keychain(Keychain &&other) {
-		this->data_path = std::move(other.data_path);
-		this->db = other.db;
-		other.db = nullptr;
-		this->tec = std::move(other.tec);
-	}
-
-	Keychain &operator=(Keychain &&other) {
-		this->data_path = std::move(other.data_path);
-		this->db = other.db;
-		other.db = nullptr;
-		this->tec = std::move(other.tec);
-		return *this;
-	}
-
-	~Keychain() {
-		if (this->db) delete this->db;
-	}
+	Keychain(Keychain &&other);
+	Keychain &operator=(Keychain &&other);
 
 	static std::unique_ptr<Keychain> initialize_with_seed(
 	    std::filesystem::path path, crypto::Seed &&seed, crypto::PasswordHash &&pw_hash);
