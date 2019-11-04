@@ -34,31 +34,35 @@ struct KeychainDirectoryMeta {
 struct KeychainDirectory;
 
 struct KeychainEntry {
-	KeychainEntryMeta meta;
-	KeychainDirectory *parent_dir;
+	using ptr = std::shared_ptr<KeychainEntry>;
 
-	KeychainEntry(const KeychainEntryMeta &meta, KeychainDirectory *parent_dir) :
+	KeychainEntryMeta meta;
+	std::weak_ptr<KeychainDirectory> parent_dir;
+
+	KeychainEntry(const KeychainEntryMeta &meta, std::weak_ptr<KeychainDirectory> parent_dir) :
 	    meta(meta), parent_dir(parent_dir) {}
 };
 
 struct KeychainDirectory {
-	KeychainDirectoryMeta meta;
-	KeychainDirectory *parent;
+	using ptr = std::shared_ptr<KeychainDirectory>;
 
-	std::vector<KeychainDirectory> dirs = {};
-	std::vector<KeychainEntry> entries = {};
+	KeychainDirectoryMeta meta;
+	// std::weak_ptr<KeychainDirectory> parent;
+
+	std::vector<ptr> dirs = {};
+	std::vector<KeychainEntry::ptr> entries = {};
 
 	int dir_level;
 	bool is_open = false;
 
-	KeychainDirectory(const KeychainDirectoryMeta &meta, KeychainDirectory *parent) :
-	    meta(meta), parent(parent) {
-		dir_level = parent ? parent->dir_level + 1 : 0;
-	}
+	KeychainDirectory(const KeychainDirectoryMeta &meta, int dir_level) :
+	    meta(meta), dir_level(dir_level) {}
+
+	KeychainDirectory(const KeychainDirectoryMeta &meta, const ptr &parent) :
+	    meta(meta), dir_level(parent->dir_level + 1) {}
 };
 
-std::vector<std::variant<KeychainDirectory *, KeychainEntry *>> flatten_dirs(
-    std::shared_ptr<KeychainDirectory> root);
+using AnyKeychainPtr = std::variant<KeychainEntry::ptr, KeychainDirectory::ptr>;
 
 class Keychain {
 	std::filesystem::path data_path;
@@ -81,19 +85,8 @@ class Keychain {
 	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash pw_hash);
 
 	std::string get_data_dir_path() const { return data_path.string(); }
-	std::shared_ptr<KeychainDirectory> get_root_dir() const {
-		// TODO: should be generated from data in DB (for now mock)
-		std::shared_ptr<KeychainDirectory> root =
-		    std::make_unique<KeychainDirectory>(KeychainDirectoryMeta{"/", ""}, nullptr);
-		KeychainDirectory *root_raw_ptr = static_cast<KeychainDirectory *>(root.get());
+	KeychainDirectory::ptr get_root_dir() const;
+	void save_entries(KeychainDirectory::ptr root);
 
-		root->dirs.emplace_back(KeychainDirectoryMeta{"General", ""}, root_raw_ptr);
-		root->dirs[0].dir_level = 1;
-		root->dirs[0].entries.emplace_back(
-		    KeychainEntryMeta{"some password", "password to some site", {0}}, &(root->dirs[0]));
-		root->entries.emplace_back(
-		    KeychainEntryMeta{"other password", "password to some other site", {1}}, root_raw_ptr);
-		root->is_open = true;
-		return root;
-	}
+	static std::vector<AnyKeychainPtr> flatten_dirs(KeychainDirectory::ptr root);
 };
