@@ -7,7 +7,7 @@
 
 namespace crypto {
 
-PasswordHash hash_password(utils::sensitive_string&& password);
+PasswordHash hash_password(const utils::sensitive_string& password);
 EncryptedSeed encrypt_seed(Seed seed, PasswordHash password_hash);
 Seed decrypt_seed(EncryptedSeed encrypted_seed, PasswordHash password_hash);
 

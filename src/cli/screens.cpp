@@ -4,37 +4,43 @@
 
 #include <curses.h>
 
-#include <functional>
 #include <vector>
 
-std::unique_ptr<Screen> StartScreen::run() {
+StartScreen::StartScreen(WindowManager *wmanager): ScreenController(wmanager) {
+	std::vector<BasicMenuEntry> start_screen_menu_entries = {
+		{ "Import keychain", [wmanager]() { wmanager->set_controller(new ImportKeychainScreen(wmanager)); } },
+		{ "Create new keychain", [wmanager]() { wmanager->set_controller(new NewKeychainScreen(wmanager)); } },
+		{ "Exit", [wmanager]() { wmanager->stop(); } },
+	};
+
+	start_screen_menu.reset(new BasicMenu(std::move(start_screen_menu_entries), { 3, 5 }));
+}
+
+void StartScreen::m_draw() {
 	clear();
 
 	mvaddstr(0, 0, "Deterministic password manager");
 
-	std::vector<BasicMenuEntry> start_screen_menu_entries = {
-		{ "Import keychain" },
-		{ "Create new keychain" },
-		{ "Exit" },
-	};
+	int maxlines = LINES - 1;
+	mvaddstr(maxlines, 0, "<right arrow> to accept | <up / down arrow> to change");
 
-	BasicMenu start_screen_menu = BasicMenu({ 3, 5 }, start_screen_menu_entries);
-	size_t selected = start_screen_menu.get_user_selection();
-
-	std::vector<std::function<std::unique_ptr<Screen>()>> next_screen_mapping = {
-		[]() -> std::unique_ptr<Screen> { return std::make_unique<ImportKeychainScreen>(); },
-		[]() -> std::unique_ptr<Screen> { return std::make_unique<NewKeychainScreen>(); },
-		[]() -> std::unique_ptr<Screen> { return nullptr; },
-	};
-
-	return next_screen_mapping[selected]();
+	start_screen_menu->draw();
 }
 
-void show_error(const Point& pos, const std::string& msg) {
-	move(pos.row, 0);
-	clrtoeol();
-	mvaddstr(pos.row, pos.col, msg.c_str());
+void StartScreen::m_on_key(int key) {
+	start_screen_menu->process_key(key);
+}
+
+
+void ErrorScreen::m_draw() {
+	move(origin.row, 0);
+	clear();
+	mvaddstr(origin.row, origin.col, msg.c_str());
 	addstr(" Press any key to continue.");
+	// set cursor 0
 	noecho();
-	getch();
+}
+
+void ErrorScreen::m_on_key(int) {
+	on_ok();
 }

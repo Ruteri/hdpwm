@@ -1,12 +1,15 @@
 #include <src/cli/screens.h>
 
-
-KeychainMainScreen::KeychainMainScreen(Keychain&& keychain): keychain(std::move(keychain)), keychain_entries(this->keychain.get_entries()) {}
+KeychainMainScreen::KeychainMainScreen(WindowManager *wmanager, std::unique_ptr<Keychain> keychain): ScreenController(wmanager), keychain(std::move(keychain)), keychain_entries(this->keychain->get_entries()) {}
 
 // TODO: should be called on screen resize
-void KeychainMainScreen::create_windows() {
+void KeychainMainScreen::m_init() {
 	clear();
 	refresh();
+
+	cbreak();
+	noecho();
+	keypad(stdscr, TRUE);
 
 	getmaxyx(stdscr, this->maxlines, this->maxcols);
 
@@ -14,7 +17,7 @@ void KeychainMainScreen::create_windows() {
 
 	this->header = newwin(1, this->maxcols / 5 * 4, 0, 0);
 
-	auto data_string_path = this->keychain.get_data_dir_path();
+	auto data_string_path = this->keychain->get_data_dir_path();
 	mvwaddstr(this->header, 0, 0, "Browsing ");
 	waddstr(this->header, data_string_path.c_str());
 
@@ -38,14 +41,14 @@ void KeychainMainScreen::create_windows() {
 	wrefresh(this->footer);
 }
 
-void KeychainMainScreen::delete_windows() {
+void KeychainMainScreen::m_cleanup() {
 	delwin(this->header);
 	delwin(this->main);
 	delwin(this->details);
 	delwin(this->footer);
 }
 
-void KeychainMainScreen::draw() {
+void KeychainMainScreen::m_draw() {
 
 	/*** entries box ***/
 
@@ -73,30 +76,16 @@ void KeychainMainScreen::draw() {
 	wrefresh(this->details);
 }
 
-std::unique_ptr<Screen> KeychainMainScreen::run() {
-	this->create_windows();
+void KeychainMainScreen::m_on_key(int key) {
 
-	cbreak();
-	noecho();
-	keypad(stdscr, TRUE);
-
-	for (;;) {
-		this->draw();
-
-		int ch = getch();
-		switch(ch) {
-		case KEY_DOWN:
-			this->selected_entry = (this->selected_entry + 1) % this->keychain_entries.size();
-			break;
-		case KEY_UP:
-			this->selected_entry = (this->keychain_entries.size() + this->selected_entry - 1) % this->keychain_entries.size();
-			break;
-		case KEY_RIGHT: case KEY_ENTER: case KEY_RETURN:
-			break;
-		}
+	switch(key) {
+	case KEY_DOWN:
+		this->selected_entry = (this->selected_entry + 1) % this->keychain_entries.size();
+		break;
+	case KEY_UP:
+		this->selected_entry = (this->keychain_entries.size() + this->selected_entry - 1) % this->keychain_entries.size();
+		break;
+	case KEY_RIGHT: case KEY_ENTER: case KEY_RETURN:
+		break;
 	}
-
-	this->delete_windows();
-
-	return nullptr;
 }

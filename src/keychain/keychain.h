@@ -20,12 +20,12 @@ class Keychain {
 	leveldb::DB* db;
 	crypto::TimedEncryptionKey tec;
 
-	Keychain() = default;
-
 	Keychain(const Keychain&) = delete;
 	Keychain& operator=(const Keychain&) = delete;
 
 public:
+	Keychain() = default;
+
 	Keychain(Keychain&& other) {
 		this->data_path = std::move(other.data_path);
 		this->db = other.db;
@@ -43,8 +43,8 @@ public:
 
 	~Keychain() { if (this->db) delete this->db; }
 
-	static Keychain initialize_with_seed(std::filesystem::path path, crypto::Seed&& seed, crypto::PasswordHash&& pw_hash);
-	static Keychain open(std::filesystem::path path, crypto::PasswordHash&& pw_hash);
+	static std::unique_ptr<Keychain> initialize_with_seed(std::filesystem::path path, crypto::Seed&& seed, crypto::PasswordHash&& pw_hash);
+	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash&& pw_hash);
 
 	std::string get_data_dir_path() const { return data_path.string(); }
 	std::vector<KeychainEntry> get_entries() const {

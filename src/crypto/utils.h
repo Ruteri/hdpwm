@@ -12,6 +12,7 @@ struct sensitive_string {
 	sensitive_string();
 	sensitive_string(sensitive_string&&);
 	sensitive_string(const sensitive_string&) = delete;
+
 	sensitive_string& operator=(sensitive_string&&);
 	sensitive_string& operator=(const sensitive_string&) = delete;
 

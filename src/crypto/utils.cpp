@@ -6,12 +6,16 @@ sensitive_string::sensitive_string() {}
 
 sensitive_string::sensitive_string(sensitive_string&& other) {
 	this->data = other.data;
+	this->index = other.index;
 	other.data = nullptr;
+	other.index = 0;
 }
 
 sensitive_string& sensitive_string::operator=(sensitive_string&& other) {
 	this->data = other.data;
+	this->index = other.index;
 	other.data = nullptr;
+	other.index = 0;
 	return *this;
 }
 

@@ -7,50 +7,44 @@
 #include <string>
 #include <vector>
 
-BasicMenu::BasicMenu(const Point pos, const std::vector<BasicMenuEntry>& links): origin_pos(pos), links(links) {}
-
-void BasicMenu::output_menu_element(const Point& pos, BasicMenuEntry entry) {
-	move(pos.row, 0);
-	clrtoeol();
-	mvaddstr(pos.row, pos.col, entry.title.c_str());
-}
+BasicMenu::BasicMenu(std::vector<BasicMenuEntry> links, Point pos): origin_pos(pos), links(std::move(links)) {}
 
 void BasicMenu::draw() {
+	return this->draw(stdscr);
+}
+
+void BasicMenu::draw(WINDOW *scr) {
 	curs_set(0);
 
-	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 0, "<right arrow> to accept | <up / down arrow> to change");
+	int maxr, maxc;
+	getmaxyx(scr, maxr, maxc);
 
-	for (size_t i = 0; i < links.size(); ++i) {
-		if (i == this->c_selected) {
-			attron(A_STANDOUT);
-			output_menu_element({origin_pos.row + i, origin_pos.col}, this->links[i]);
-			attroff(A_STANDOUT);
+	int max_entries = maxr - origin_pos.row - 1;
+	int n_to_skip = std::max(0, (int) this->c_selected - max_entries + 1);
+	for (int i = 0; i < std::min(max_entries, (int) this->links.size()); ++i) {
+		wmove(scr, origin_pos.row + i, 0);
+		wclrtoeol(scr);
+		std::string& to_print = links[i + n_to_skip].title;
+		if (i + n_to_skip == this->c_selected) {
+			wattron(scr, A_STANDOUT);
+			mvwaddstr(scr, origin_pos.row + i, origin_pos.col, to_print.c_str());
+			wattroff(scr, A_STANDOUT);
 		} else {
-			output_menu_element({origin_pos.row + i, origin_pos.col}, this->links[i]);
+			mvwaddstr(scr, origin_pos.row + i, origin_pos.col, to_print.c_str());
 		}
-
 	}
 }
 
-size_t BasicMenu::get_user_selection() {
-	cbreak();
-	noecho();
-	keypad(stdscr, TRUE);
-
-	for (;;) {
-		this->draw();
-
-		int ch = getch();
-		switch(ch) {
-		case KEY_DOWN:
-			this->c_selected = (this->c_selected + 1) % this->links.size();
-			break;
-		case KEY_UP:
-			this->c_selected = (this->links.size() + this->c_selected - 1) % this->links.size();
-			break;
-		case KEY_RIGHT: case KEY_ENTER: case KEY_RETURN:
-			return this->c_selected;
-		}
+void BasicMenu::process_key(int key) {
+	switch(key) {
+	case KEY_DOWN:
+		c_selected = (c_selected + 1) % links.size();
+		break;
+	case KEY_UP:
+		c_selected = (links.size() + c_selected - 1) % links.size();
+		break;
+	case KEY_RIGHT: case KEY_ENTER: case KEY_RETURN:
+		links[c_selected].on_accept();
+		break;
 	}
 }

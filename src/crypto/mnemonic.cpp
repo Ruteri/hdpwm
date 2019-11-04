@@ -14,7 +14,7 @@ namespace crypto {
 
 constexpr int PBKDF2_ITERATION_COUNT = 2048;
 
-PasswordHash hash_password(utils::sensitive_string&& password) {
+PasswordHash hash_password(const utils::sensitive_string& password) {
 	PasswordHash pw_hash;
 
 	CryptoPP::SHA256 sha;

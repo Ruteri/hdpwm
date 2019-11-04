@@ -13,15 +13,9 @@
 
 int main() {
 
-	initscr();
-
-	std::unique_ptr<Screen> current_screen = std::make_unique<StartScreen>();
-	for (;current_screen;) {
-		std::unique_ptr<Screen> next_screen = current_screen->run();
-		current_screen = std::move(next_screen);
-	}
-
-	endwin();
+	WindowManager wm;
+	wm.set_controller(new StartScreen(&wm));
+	wm.run();
 
 	return 0;
 }

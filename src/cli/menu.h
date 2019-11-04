@@ -2,11 +2,17 @@
 
 #include <src/cli/utils.h>
 
+#include <functional>
 #include <string>
 #include <vector>
 
+/* forward declare as ncurses define OK which breaks leveldb */
+struct _win_st;
+typedef struct _win_st WINDOW;
+
 struct BasicMenuEntry {
 	std::string title;
+	std::function<void()> on_accept;
 };
 
 class BasicMenu {
@@ -14,13 +20,11 @@ class BasicMenu {
 	Point origin_pos;
 	std::vector<BasicMenuEntry> links;
 
-	void output_menu_element(const Point& p, BasicMenuEntry entry);
-
 public:
-	BasicMenu(const Point pos, const std::vector<BasicMenuEntry>& links);
+	BasicMenu(std::vector<BasicMenuEntry> links, Point pos = {0, 0});
 
 	void draw();
-
-	size_t get_user_selection();
+	void draw(WINDOW *scr);
+	void process_key(int key);
 };
 

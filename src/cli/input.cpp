@@ -2,39 +2,29 @@
 
 #include <curses.h>
 
-input_action_result InputHandler::process() {
-	cbreak();
-	echo();
-	curs_set(2);
-
-	for (;;) {
-		this->draw();
-
-		int ch = getch();
-		switch (ch) {
-		case KEY_SLEFT: case ERR:
-			return input_action_result::BACK;
-		case KEY_ENTER: case KEY_RETURN:
-			return input_action_result::CONTINUE;
-		case KEY_BACKSPACE:
-			this->on_backspace();
-			break;
-		default:
-			this->on_char(ch);
-			break;
-		}
-		utils::secure_zero(&ch, 1);
+void InputHandler::process_key(int key) {
+	switch (key) {
+	case KEY_SLEFT: case ERR:
+		return on_cancel();
+	case KEY_ENTER: case KEY_RETURN:
+		return on_accept();
+	case KEY_BACKSPACE:
+		this->on_backspace();
+		break;
+	default:
+		this->on_char((char) key);
+		break;
 	}
 }
 
-StringInputHandler::StringInputHandler(const Point& origin, const std::string& title): origin(origin), title(title) {}
+StringInputHandler::StringInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel): InputHandlerCallback<std::string>(std::move(on_accept), std::move(on_cancel)), origin(origin), title(title) {}
 
 void StringInputHandler::on_backspace() {
 	this->value.pop_back();
 }
 
-void StringInputHandler::on_char(int &c) {
-	this->value.push_back((char) c);
+void StringInputHandler::on_char(char c) {
+	this->value.push_back(c);
 }
 
 void StringInputHandler::draw() {
@@ -45,17 +35,14 @@ void StringInputHandler::draw() {
 	addstr(this->value.c_str());
 }
 
-SensitiveInputHandler::SensitiveInputHandler(const Point& origin, const std::string& title): origin(origin), title(title) {}
+SensitiveInputHandler::SensitiveInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel): InputHandlerCallback<utils::sensitive_string>(std::move(on_accept), std::move(on_cancel)), origin(origin), title(title) {}
 
 void SensitiveInputHandler::on_backspace() {
 	this->value.pop_back();
 }
 
-void SensitiveInputHandler::on_char(int &c) {
-	char ch = c;
-	this->value.push_back(ch);
-	utils::secure_zero(&c, 1);
-	utils::secure_zero(&ch, 1);
+void SensitiveInputHandler::on_char(char c) {
+	this->value.push_back(c);
 }
 
 void SensitiveInputHandler::draw() {
