@@ -59,7 +59,7 @@ void KeychainMainScreen::m_init() {
 
 	this->footer = newwin(1, this->maxcols / 5 * 4, this->maxlines - 1, 0);
 	mvwaddstr(this->footer, 0, 0,
-	    "<up & down arrows> to navigate | <n> to add new entry | <N> to add new group | <return> to view & edit | <q> to quit");
+	    "<↑↓> to navigate | <n/N> to add new entry/group | <↲> to view & edit | <q> to quit");
 
 	wrefresh(this->footer);
 }

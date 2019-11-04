@@ -153,8 +153,6 @@ void NewKeychainScreen::m_draw() {
 	clear();
 
 	mvaddstr(0, 0, "Creating new keychain");
-	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 0, "<shift>-<left arrow> to go back | <return> to continue");
 }
 
 void NewKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }
@@ -207,8 +205,6 @@ void ImportKeychainScreen::m_draw() {
 	clear();
 
 	mvaddstr(0, 0, "Importing keychain");
-	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 0, "<shift>-<left arrow> to go back | <return> to continue");
 }
 
 void ImportKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }

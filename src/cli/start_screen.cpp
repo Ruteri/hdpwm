@@ -26,7 +26,7 @@ void StartScreen::m_draw() {
 	mvaddstr(0, 0, "Deterministic password manager");
 
 	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 0, "<return / home> to accept | <up / down arrow> to change | <q> to quit");
+	mvaddstr(maxlines, 0, "<↑↓> to navigate | <↲> to accept | <q> to quit");
 
 	start_screen_menu->draw();
 }
