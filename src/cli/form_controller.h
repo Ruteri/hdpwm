@@ -14,6 +14,7 @@ class FormController : public ScreenController {
 	ScreenController *parent;
 	WINDOW *&window;
 	std::function<void()> on_done;
+	std::function<void()> on_cancel;
 
 	enum class State { PROCESSING, IGNORING, DONE } state = State::PROCESSING;
 
@@ -35,7 +36,7 @@ class FormController : public ScreenController {
 
   public:
 	FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
-	    std::function<void()> on_done);
+	    std::function<void()> on_done, std::function<void()> on_cancel);
 
 	void add_label(std::string);
 

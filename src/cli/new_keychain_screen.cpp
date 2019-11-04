@@ -130,7 +130,12 @@ void NewKeychainScreen::post_import_form() {
 		}
 	};
 
-	auto form_controller = std::make_shared<FormController>(wmanager, nullptr, window, on_form_done);
+	auto on_form_cancel = [this]() {
+		this->wmanager->pop_controller();
+		this->wmanager->pop_controller();
+	};
+
+	auto form_controller = std::make_shared<FormController>(wmanager, nullptr, window, on_form_done, on_form_cancel);
 
 	auto on_accept_path = [result](std::string &path) -> bool {
 		result->db_path = expand_path(path, "~/.hdpwm");
@@ -182,7 +187,12 @@ void ImportKeychainScreen::post_import_form() {
 		}
 	};
 
-	auto form_controller = std::make_shared<FormController>(wmanager, this, window, on_form_done);
+	auto on_form_cancel = [this]() {
+		this->wmanager->pop_controller();
+		this->wmanager->pop_controller();
+	};
+
+	auto form_controller = std::make_shared<FormController>(wmanager, this, window, on_form_done, on_form_cancel);
 
 	auto on_accept_path = [result](std::string &path) -> bool {
 		result->db_path = expand_path(path, "~/.hdpwm");

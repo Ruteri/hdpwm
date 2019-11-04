@@ -3,9 +3,9 @@
 #include <curses.h>
 
 FormController::FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
-    std::function<void()> on_done) :
+    std::function<void()> on_done, std::function<void()> on_cancel) :
     ScreenController(wmanager),
-    parent(parent), window(window), on_done(on_done) {
+    parent(parent), window(window), on_done(on_done), on_cancel(on_cancel) {
 	m_cursor_prev_state = curs_set(2);
 }
 
@@ -20,6 +20,8 @@ void FormController::m_cleanup() {
 }
 
 void FormController::m_draw() {
+	wclear(window);
+
 	for (auto &output : labels) {
 		output->draw(window);
 	}
@@ -52,6 +54,9 @@ void FormController::m_on_key(int key) {
 		case KEY_DOWN:
 		case '\t':
 			fields[current_input]->process_key(KEY_ENTER);
+			break;
+		case KEY_ESC:
+			on_cancel();
 			break;
 		default:
 			fields[current_input]->process_key(key);

@@ -1,5 +1,7 @@
 #include <src/cli/manager.h>
+
 #include <src/cli/screen_controller.h>
+#include <src/cli/utils.h>
 
 #include <curses.h>
 #include <signal.h>
@@ -66,9 +68,18 @@ void WindowManager::getch_loop() {
 			using namespace std::chrono_literals;
 			std::this_thread::sleep_for(10ms);
 			continue;
+		} else if (ch == KEY_RAW_ALT) {
+			// will return immediately
+			int ch2 = getch();
+			if (ch2 == ERR) {
+				push_event({EVT::EV_KEY, {KEY_ESC}});
+			} else {
+				// TODO: add alt-key handling
+				push_event({EVT::EV_KEY, {ch2}});
+			}
+		} else {
+			push_event({EVT::EV_KEY, {ch}});
 		}
-
-		push_event({EVT::EV_KEY, {ch}});
 	}
 }
 

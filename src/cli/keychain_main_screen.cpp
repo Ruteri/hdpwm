@@ -195,8 +195,12 @@ void KeychainMainScreen::post_entry_form() {
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
+	auto on_form_cancel = [this]() {
+		this->wmanager->pop_controller();
+	};
+
 	auto entry_form_controller =
-	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
+	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
 
 	auto on_name_accept = [entry_result](std::string &name) -> bool {
 		entry_result->name = name;
@@ -242,8 +246,12 @@ void KeychainMainScreen::post_directory_form() {
 		flat_entries_cache = flatten_dirs(keychain_root_dir);
 	};
 
+	auto on_form_cancel = [this]() {
+		this->wmanager->pop_controller();
+	};
+
 	auto directory_form_controller =
-	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done);
+	    std::make_shared<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
 
 	auto on_name_accept = [dir_result](std::string &name) -> bool {
 		dir_result->name = name;
