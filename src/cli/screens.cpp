@@ -34,10 +34,11 @@ void StartScreen::m_draw() {
 }
 
 void StartScreen::m_on_key(int key) {
-	if (key == 'q')
+	if (key == 'q') {
 		wmanager->stop();
-	else
+	} else {
 		start_screen_menu->process_key(key);
+	}
 }
 
 void ErrorScreen::m_draw() {

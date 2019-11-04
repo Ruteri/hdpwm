@@ -134,7 +134,7 @@ Seed mnemonic_to_seed(std::vector<std::string> words) {
 	CryptoPP::byte *mnemonic = new CryptoPP::byte[words_len];
 	CryptoPP::byte *pw_ptr = mnemonic;
 	for (auto word : words) {
-		std::strcpy(reinterpret_cast<char *>(pw_ptr), word.c_str());
+		std::strncpy(reinterpret_cast<char *>(pw_ptr), word.c_str(), word.size());
 		pw_ptr += word.size();
 	}
 

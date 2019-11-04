@@ -75,7 +75,7 @@ KeychainMainScreen::~KeychainMainScreen() {
 	if (keychain_root_dir) delete keychain_root_dir;
 }
 
-// TODO: should be called on screen resize
+// TODO(mmorusiewicz): should be called on screen resize
 void KeychainMainScreen::m_init() {
 	clear();
 	refresh();
@@ -196,7 +196,7 @@ void KeychainMainScreen::m_on_key(int key) {
 			        flat_entries_cache = flatten_dirs(keychain_root_dir);
 		        },
 		        [this](KeychainEntryNode *) {
-			        // TODO: move to edit screen (or sth like that)
+			        // TODO(mmorusiewicz): move to edit screen (or sth like that)
 		        },
 		    },
 		    flat_entries_cache[this->c_selected_index]);
@@ -225,7 +225,7 @@ void KeychainMainScreen::post_entry_form() {
 			    this->wmanager, Point{2, 5}, "Invalid form returned"));
 		}
 
-		// TODO: generate entry using keychain
+		// TODO(mmorusiewicz): generate entry using keychain
 		KeychainEntry new_entry{entry_result->name, entry_result->details};
 
 		std::visit(
@@ -273,7 +273,7 @@ void KeychainMainScreen::post_directory_form() {
 			    this->wmanager, Point{2, 5}, "Invalid form returned"));
 		}
 
-		// TODO: generate entry using keychain
+		// TODO(mmorusiewicz): generate entry using keychain
 		KeychainDirectory new_dir{dir_result->name, {}, {}};
 
 		std::visit(

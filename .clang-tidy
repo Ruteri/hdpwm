@@ -1,0 +1,9 @@
+---
+Checks:          'clang-diagnostic-*,clang-analyzer-*,-*,clang-analyzer-*,-clang-analyzer-cplusplus*,google-*'
+WarningsAsErrors: ''
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle:     none
+CheckOptions:    
+...
+

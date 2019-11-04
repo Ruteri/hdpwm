@@ -22,29 +22,28 @@ struct ValidationResult {
 	bool valid;
 	std::string reason;
 
-	ValidationResult(bool valid = true) : valid(valid), reason("") {}
-	ValidationResult(const char *reason) : valid(false), reason(reason) {}
-	ValidationResult(std::string reason) : valid(false), reason(reason) {}
+	explicit ValidationResult(bool valid = true) : valid(valid), reason("") {}
+	explicit ValidationResult(const char *reason) : valid(false), reason(reason) {}
 
-	operator bool() const { return valid; }
+	explicit operator bool() const { return valid; }
 };
 
-ValidationResult validate_new_kc_path(std::filesystem::path &path) {
+ValidationResult validate_new_kc_path(const std::filesystem::path &path) {
 	if (std::filesystem::exists(path)) {
-		return {"This file already exists, refusing to delete it."};
+		return ValidationResult{"This file already exists, refusing to delete it."};
 	} else if (!std::filesystem::is_directory(path.parent_path())) {
-		return {"The parent directory does not exist, create it first."};
+		return ValidationResult{"The parent directory does not exist, create it first."};
 	}
 
-	return {};
+	return ValidationResult{};
 }
 
-ValidationResult validate_import_kc_path(std::filesystem::path &path) {
+ValidationResult validate_import_kc_path(const std::filesystem::path &path) {
 	if (!std::filesystem::is_directory(path)) {
-		return {"Path seems invalid, refusing to import it."};
+		return ValidationResult{"Path seems invalid, refusing to import it."};
 	}
 
-	return {};
+	return ValidationResult{};
 }
 
 std::filesystem::path expand_path(
@@ -84,7 +83,7 @@ class GenerateKeychainScreen : public ScreenController {
 	    db_path(std::move(db_path)), pw_hash(std::move(pw_hash)) {
 		std::vector<std::string> mnemonic = crypto::generate_mnemonic(24);
 
-		// TODO: should clear memory after use
+		// TODO(mmorusiewicz): should clear memory after use
 		std::string combined_mnemonic;
 		for (const std::string &word : mnemonic) {
 			combined_mnemonic += word;
@@ -198,7 +197,7 @@ void ImportKeychainScreen::post_import_form() {
 void ImportKeychainScreen::m_draw() {
 	clear();
 
-	mvaddstr(0, 0, "Creating new keychain");
+	mvaddstr(0, 0, "Importing keychain");
 	int maxlines = LINES - 1;
 	mvaddstr(maxlines, 0, "<shift>-<left arrow> to go back | <return> to continue");
 }
