@@ -29,7 +29,7 @@ std::unique_ptr<Keychain> Keychain::initialize_with_seed(std::filesystem::path p
 	return kc;
 }
 
-std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::PasswordHash&& pw_hash) {
+std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::PasswordHash pw_hash) {
 	std::unique_ptr<Keychain> kc = std::make_unique<Keychain>();
 	kc->data_path = std::move(path.string());
 	kc->tec = std::move(crypto::TimedEncryptionKey(std::move(pw_hash)));

@@ -7,35 +7,37 @@
 #include <memory>
 #include <functional>
 
+/* forward declare as ncurses define OK which breaks leveldb */
+struct _win_st;
+typedef struct _win_st WINDOW;
+
 class InputHandler {
 	virtual void on_backspace() = 0;
 	virtual void on_char(char c) = 0;
 
 	virtual void on_accept() = 0;
-	virtual void on_cancel() = 0;
 
 public:
-	virtual void draw() = 0;
+	virtual void draw();
+	virtual void draw(WINDOW *window) = 0;
 	virtual void process_key(int key);
 };
 
 template <typename V>
 class InputHandlerCallback: public InputHandler {
 public:
-	using Signal = std::function<void(V&)>;
+	using ValueCallback = std::function<void(V&)>;
 	using UValue = V;
 
 protected:
 	V value{};
 
-	Signal on_accept_cb;
-	Signal on_cancel_cb;
+	ValueCallback on_accept_cb;
 
 	void on_accept() override { on_accept_cb(value); }
-	void on_cancel() override { on_cancel_cb(value); };
 
 public:
-	InputHandlerCallback(Signal on_accept_cb, Signal on_cancel_cb): on_accept_cb(on_accept_cb), on_cancel_cb(on_cancel_cb) {}
+	InputHandlerCallback(ValueCallback on_accept_cb): on_accept_cb(on_accept_cb) {}
 };
 
 class StringInputHandler: public InputHandlerCallback<std::string> {
@@ -46,10 +48,10 @@ class StringInputHandler: public InputHandlerCallback<std::string> {
 	void on_char(char c) override;
 
 public:
-	using Signal = typename InputHandlerCallback<std::string>::Signal;
-	StringInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel);
+	using ValueCallback = typename InputHandlerCallback<std::string>::ValueCallback;
+	StringInputHandler(const Point& origin, const std::string& title, ValueCallback on_accept);
 
-	void draw() override;
+	void draw(WINDOW *window) override;
 };
 
 class SensitiveInputHandler: public InputHandlerCallback<utils::sensitive_string> {
@@ -60,8 +62,8 @@ class SensitiveInputHandler: public InputHandlerCallback<utils::sensitive_string
 	void on_char(char c) override;
 
 public:
-	using Signal = typename InputHandlerCallback<utils::sensitive_string>::Signal;
-	SensitiveInputHandler(const Point& origin, const std::string& title, Signal on_accept, Signal on_cancel);
+	using ValueCallback = typename InputHandlerCallback<utils::sensitive_string>::ValueCallback;
+	SensitiveInputHandler(const Point& origin, const std::string& title, ValueCallback on_accept);
 
-	void draw() override;
+	void draw(WINDOW *window) override;
 };

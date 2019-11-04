@@ -10,6 +10,7 @@
 
 #include <curses.h>
 
+#include <functional>
 #include <memory>
 
 class ScreenController {
@@ -63,38 +64,49 @@ public:
 	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg): ScreenController(wmanager), origin(origin), msg(std::move(msg)) {}
 };
 
-/* Common type for input objects */
-/* To be used once views in cli are children-based */
-template <typename InputType>
-class InputScreenHandler: public ScreenController {
-	std::unique_ptr<InputHandler> input;
-	using Signal = typename InputType::Signal;
+class FormController: public ScreenController {
+	// non-top level? (or w/ parent)
+	ScreenController *parent;
+	WINDOW *&window;
+	std::function<void()> on_done;
+
+	enum class State { PROCESSING, IGNORING, DONE } state = State::PROCESSING;
+
+	size_t current_input = 0;
+	std::vector<InputHandler*> fields = {};
+
+	/* parent has to maintain window and it's pointer */
+	int m_cursor_prev_state;
+	virtual void m_init() { parent->init(); curs_set(2); }
+	virtual void m_cleanup() { parent->cleanup(); curs_set(m_cursor_prev_state); }
+
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+	void advance_form();
 
 public:
-	InputScreenHandler(WindowManager *wmanager, Point origin, std::string title, Signal on_accept, Signal on_cancel): ScreenController(wmanager) {
-		input.reset(new InputType(origin, title, on_accept, on_cancel));
-	}
+	FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window, std::function<void()> on_done);
 
-	void m_draw() override { input->draw(); }
-	void m_on_key(int key) override { input->process_key(key); }
+	template <typename InputType>
+	void add_field(std::string title, std::function<bool(typename InputType::UValue&)> on_accept) {
+		fields.push_back(new InputType(Point{2 + (int) fields.size() * 3, 5}, title,
+			[this, on_accept](typename InputType::UValue& v) {
+				if (on_accept(v)) advance_form();
+				else {}
+			})
+		);
+	}
 };
 
 class NewKeychainScreen: public ScreenController {
-	enum class State { DB_PATH_INPUT, PW_INPUT, MNEMONIC_CONFIRM } state = State::DB_PATH_INPUT;
+	WINDOW *window;
+	std::shared_ptr<FormController> m_form_controller;
 
-	void init_db_path_input();
-	void process_db_path_input(std::string &path);
-	std::unique_ptr<InputHandler> db_path_input;
 	std::optional<std::filesystem::path> db_path;
+	std::optional<crypto::PasswordHash> pw_hash;
 
-	void init_password_input();
-	void process_password_input(utils::sensitive_string& pw);
-	std::unique_ptr<InputHandler> password_input;
-
-	std::unique_ptr<Keychain> keychain;
-
-	std::vector<std::unique_ptr<OutputHandler>> outputs;
-
+	void m_init() override;
 	void m_draw() override;
 	void m_on_key(int key) override;
 
@@ -102,23 +114,14 @@ public:
 	NewKeychainScreen(WindowManager *wmanager);
 };
 
-/* class is mostly copy-pase of NewKeychainScreen, but it doesn't
-   have to be that so it should not be generalized
-*/
 class ImportKeychainScreen: public ScreenController {
-	enum class State { DB_PATH_INPUT, PW_INPUT } state = State::DB_PATH_INPUT;
+	WINDOW *window;
+	std::shared_ptr<FormController> m_form_controller;
 
-	void init_db_path_input();
-	void process_db_path_input(std::string &path);
-	std::unique_ptr<InputHandler> db_path_input;
 	std::optional<std::filesystem::path> db_path;
+	std::optional<crypto::PasswordHash> pw_hash;
 
-	void init_password_input();
-	void process_password_input(utils::sensitive_string& pw);
-	std::unique_ptr<InputHandler> password_input;
-
-	std::unique_ptr<Keychain> keychain;
-
+	void m_init() override;
 	void m_draw() override;
 	void m_on_key(int key) override;
 

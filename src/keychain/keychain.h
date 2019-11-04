@@ -50,7 +50,7 @@ public:
 	~Keychain() { if (this->db) delete this->db; }
 
 	static std::unique_ptr<Keychain> initialize_with_seed(std::filesystem::path path, crypto::Seed&& seed, crypto::PasswordHash&& pw_hash);
-	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash&& pw_hash);
+	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash pw_hash);
 
 	std::string get_data_dir_path() const { return data_path.string(); }
 	KeychainDirectory get_root_dir() const {
