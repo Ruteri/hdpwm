@@ -9,14 +9,16 @@
 #include <memory>
 
 class InputHandler {
-	virtual void on_backspace() = 0;
-	virtual void on_char(char c) = 0;
-
 	virtual void on_accept() = 0;
 
+	virtual void on_char(char c) = 0;
+	virtual void on_backspace() = 0;
+	virtual void m_draw(WINDOW *window) = 0;
+
   public:
-	virtual void draw();
-	virtual void draw(WINDOW *window) = 0;
+	void draw();
+	void draw(WINDOW *window);
+
 	virtual void process_key(int key);
 };
 
@@ -40,15 +42,15 @@ class StringInputHandler : public InputHandlerCallback<std::string> {
 	Point origin;
 	std::string title;
 
-	void on_backspace() override;
 	void on_char(char c) override;
+	void on_backspace() override;
+	void m_draw(WINDOW *window) override;
 
   public:
 	using ValueCallback = typename InputHandlerCallback<std::string>::ValueCallback;
 	StringInputHandler(const Point &origin, const std::string &title, ValueCallback on_accept);
 
-	void draw(WINDOW *window) override;
-
+	// allows setting displayed value
 	void set_value(const std::string &v) { value = v; }
 };
 
@@ -56,12 +58,11 @@ class SensitiveInputHandler : public InputHandlerCallback<utils::sensitive_strin
 	Point origin;
 	std::string title;
 
-	void on_backspace() override;
 	void on_char(char c) override;
+	void on_backspace() override;
+	void m_draw(WINDOW *window) override;
 
   public:
 	using ValueCallback = typename InputHandlerCallback<utils::sensitive_string>::ValueCallback;
 	SensitiveInputHandler(const Point &origin, const std::string &title, ValueCallback on_accept);
-
-	void draw(WINDOW *window) override;
 };

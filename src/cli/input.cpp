@@ -2,7 +2,9 @@
 
 #include <curses.h>
 
-void InputHandler::draw() { this->draw(stdscr); }
+void InputHandler::draw() { this->m_draw(stdscr); }
+
+void InputHandler::draw(WINDOW *window) { this->m_draw(window); }
 
 void InputHandler::process_key(int key) {
 	switch (key) {
@@ -25,13 +27,13 @@ StringInputHandler::StringInputHandler(
     InputHandlerCallback<std::string>(std::move(on_accept)),
     origin(origin), title(title) {}
 
+void StringInputHandler::on_char(char c) { this->value.push_back(c); }
+
 void StringInputHandler::on_backspace() {
 	if (this->value.length() > 0) this->value.pop_back();
 }
 
-void StringInputHandler::on_char(char c) { this->value.push_back(c); }
-
-void StringInputHandler::draw(WINDOW *window) {
+void StringInputHandler::m_draw(WINDOW *window) {
 	wmove(window, this->origin.row, 0);
 	wclrtoeol(window);
 
@@ -44,13 +46,13 @@ SensitiveInputHandler::SensitiveInputHandler(
     InputHandlerCallback<utils::sensitive_string>(std::move(on_accept)),
     origin(origin), title(title) {}
 
+void SensitiveInputHandler::on_char(char c) { this->value.push_back(c); }
+
 void SensitiveInputHandler::on_backspace() {
 	if (this->value.size() > 0) this->value.pop_back();
 }
 
-void SensitiveInputHandler::on_char(char c) { this->value.push_back(c); }
-
-void SensitiveInputHandler::draw(WINDOW *window) {
+void SensitiveInputHandler::m_draw(WINDOW *window) {
 	wmove(window, this->origin.row, 0);
 	wclrtoeol(window);
 
