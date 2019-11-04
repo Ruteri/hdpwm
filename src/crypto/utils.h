@@ -7,9 +7,11 @@ namespace utils {
 
 struct sensitive_string {
 	size_t index = 0;
-	char *data = new char[256];
+	size_t max_size = 32;
+	char *data;
 
 	sensitive_string();
+	explicit sensitive_string(int size);
 	sensitive_string(const sensitive_string &);
 	sensitive_string(sensitive_string &&);
 
@@ -22,14 +24,14 @@ struct sensitive_string {
 	~sensitive_string();
 
 	size_t size() const;
+	void resize(size_t);
+	void reserve(size_t);
 
+	void push_back(char c);
 	void pop_back();
-
-	// returns false if out of space
-	bool push_back(char c);
 };
 
 void secure_zero(void *s, size_t n);
-void secure_zero_string(std::string &s);
+void secure_zero_string(std::string &&s);
 
 } // namespace utils

@@ -217,7 +217,7 @@ constexpr static char allowed_chars[] =
 
 utils::sensitive_string Keychain::encode_secret(
     unsigned char *in_data, size_t in_size, size_t out_size) {
-	utils::sensitive_string secret;
+	utils::sensitive_string secret(out_size);
 	size_t v{0x603d0ba6};
 	for (size_t i = 0; i * 3 < in_size && i < out_size; ++i) {
 		v += 0xcc455073;
@@ -239,7 +239,7 @@ utils::sensitive_string Keychain::derive_secret(const crypto::DerivationPath &dp
 	}
 
 	crypto::EncryptedSeed encrypted_seed = crypto::deserialize<crypto::EncryptedSeed>(seed_str);
-	utils::secure_zero_string(seed_str);
+	utils::secure_zero_string(std::move(seed_str));
 
 	crypto::Seed derived_seed =
 	    crypto::derive_child(this->tec.getPasswordHash(), encrypted_seed, dpath);
