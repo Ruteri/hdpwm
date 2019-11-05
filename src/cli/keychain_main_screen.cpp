@@ -203,6 +203,7 @@ void KeychainMainScreen::m_on_key(int key) {
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
+	case 'd':
 	case 'x':
 		clipboard = flat_entries_cache[this->c_selected_index];
 		std::visit(
