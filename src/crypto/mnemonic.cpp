@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/crypto/mnemonic.h>
 
 #include <src/crypto/mnemonic-wordlist.cpp>
+#include <src/crypto/utils.h>
 #include <src/utils/utils.h>
 
 #include <external/cryptopp/osrng.h>
@@ -38,9 +39,11 @@ uint8_t extract_bit(const CryptoPP::byte *buffer, int cb) {
 	return byte & mask;
 }
 
-std::string word_at(int index) { return mnemonic_dictionary[index % mnemonic_dictionary.size()]; }
+utils::sensitive_string word_at(int index) {
+	return mnemonic_dictionary[index % mnemonic_dictionary.size()];
+}
 
-int find_word_index(std::string word) {
+int find_word_index(const utils::sensitive_string &word) {
 	auto it = std::lower_bound(mnemonic_dictionary.begin(), mnemonic_dictionary.end(), word);
 	if (it == mnemonic_dictionary.end() || *it != word) {
 		throw std::runtime_error("unknown word");
@@ -65,8 +68,8 @@ std::vector<int> bitsplit_11(const CryptoPP::byte *buffer, int size) {
 	return rv;
 }
 
-std::vector<std::string> get_words_from_indices(std::vector<int> indices) {
-	std::vector<std::string> rv;
+std::vector<utils::sensitive_string> get_words_from_indices(const std::vector<int> &indices) {
+	std::vector<utils::sensitive_string> rv;
 	rv.reserve(indices.size());
 	for (auto index : indices) {
 		rv.push_back(word_at(index));
@@ -75,7 +78,7 @@ std::vector<std::string> get_words_from_indices(std::vector<int> indices) {
 	return rv;
 }
 
-std::string get_random_word() {
+utils::sensitive_string get_random_word() {
 	CryptoPP::byte seed[2];
 	CryptoPP::NonblockingRng rng;
 	rng.GenerateBlock(seed, sizeof(seed));
@@ -83,7 +86,7 @@ std::string get_random_word() {
 	return word_at(random_index);
 }
 
-std::vector<std::string> generate_mnemonic(int entropy_size) {
+std::vector<utils::sensitive_string> generate_mnemonic(int entropy_size) {
 
 	constexpr int CHECKSUM_MAX_SIZE = 1;
 
@@ -98,14 +101,14 @@ std::vector<std::string> generate_mnemonic(int entropy_size) {
 	auto indices = bitsplit_11(seed, entropy_size * 8 + entropy_size / 4);
 	auto words = get_words_from_indices(indices);
 
-	std::string extra_word = get_random_word();
+	utils::sensitive_string extra_word = get_random_word();
 	words.push_back(extra_word);
 
 	delete[] seed;
 	return words;
 }
 
-Seed mnemonic_to_seed(std::vector<std::string> words) {
+Seed mnemonic_to_seed(const std::vector<utils::sensitive_string> &words) {
 	int words_len = 0;
 	for (auto word : words) {
 		words_len += word.size();
@@ -114,7 +117,7 @@ Seed mnemonic_to_seed(std::vector<std::string> words) {
 	CryptoPP::byte *mnemonic = new CryptoPP::byte[words_len];
 	CryptoPP::byte *pw_ptr = mnemonic;
 	for (auto word : words) {
-		std::strncpy(reinterpret_cast<char *>(pw_ptr), word.c_str(), word.size());
+		std::strncpy(reinterpret_cast<char *>(pw_ptr), word.data, word.size());
 		pw_ptr += word.size();
 	}
 

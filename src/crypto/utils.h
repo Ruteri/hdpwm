@@ -27,7 +27,7 @@ namespace utils {
 struct sensitive_string {
 	size_t index = 0;
 	size_t max_size = 32;
-	char *data;
+	char *data = nullptr;
 
 	sensitive_string();
 	explicit sensitive_string(int size);
@@ -37,6 +37,7 @@ struct sensitive_string {
 	sensitive_string &operator=(const sensitive_string &);
 	sensitive_string &operator=(sensitive_string &&);
 
+	sensitive_string(const char *);
 	explicit sensitive_string(const std::string &);
 	explicit sensitive_string(std::string &&);
 
@@ -51,6 +52,10 @@ struct sensitive_string {
 	void push_back(char c);
 	void pop_back();
 };
+
+bool operator==(const sensitive_string &lhs, const sensitive_string &rhs);
+bool operator!=(const sensitive_string &lhs, const sensitive_string &rhs);
+bool operator<(const sensitive_string &lhs, const sensitive_string &rhs);
 
 void secure_zero(void *s, size_t n);
 void secure_zero_string(std::string &&s);

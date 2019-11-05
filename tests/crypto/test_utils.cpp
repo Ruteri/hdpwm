@@ -57,7 +57,7 @@ TEST_CASE( "constructors are sane", "[sensitive_string_ctrs]" ) {
 	{
 		sensitive_string from_cstr("somestr");
 		REQUIRE( from_cstr.index == 7 );
-		REQUIRE( from_cstr.max_size == 32 );
+		REQUIRE( from_cstr.max_size == 7 );
 	}
 
 	{
@@ -86,6 +86,51 @@ TEST_CASE( "destructor clears memory", "[sensitive_string_destrc]" ) {
 
 	for (int i = 0; i < 32; ++i) REQUIRE( block[i] != 'x' );
 	for (int i = 32; i < 48; ++i) REQUIRE( block[i] == 'x' );
+}
+
+TEST_CASE( "equality operator works as intended", "[sensitive_string_cmp_eq]" ) {
+	std::vector<std::pair<utils::sensitive_string, utils::sensitive_string>> equals {
+		{"", ""},
+		{"xxx", "xxx"},
+		{"abcdefghijklmnop", "abcdefghijklmnop"}
+	};
+
+	for (const auto [lhs, rhs] : equals) {
+		INFO( "Checking " << static_cast<std::string>(lhs) << " and " << static_cast<std::string>(rhs));
+		REQUIRE( lhs == rhs );
+	}
+}
+
+TEST_CASE( "nequality operator works as intended", "[sensitive_string_cmp_neq]" ) {
+	std::vector<std::pair<utils::sensitive_string, utils::sensitive_string>> nequals {
+		// {"", "\0"},
+		{"xxx", "xx"},
+		{"xx", "xxx"},
+		{"xxx", "xxy"},
+		{"xxy", "xxx"},
+		{"yxx", "xxx"},
+		{"xxx", "yxx"},
+	};
+
+	for (const auto [lhs, rhs] : nequals) {
+		INFO( "Checking " << static_cast<std::string>(lhs) << " and " << static_cast<std::string>(rhs));
+		REQUIRE( lhs != rhs );
+		REQUIRE( !(lhs == rhs) );
+	}
+}
+
+TEST_CASE( "less-than operator works as intended", "[sensitive_string_cmp_lt]" ) {
+	std::vector<std::pair<utils::sensitive_string, utils::sensitive_string>> lthens {
+		{"a", "aa"},
+		{"aaa", "aab"},
+	};
+
+	for (const auto [lhs, rhs] : lthens) {
+		INFO( "Checking " << static_cast<std::string>(lhs) << " and " << static_cast<std::string>(rhs));
+		REQUIRE( lhs < rhs );
+		REQUIRE( lhs != rhs );
+		REQUIRE( !(lhs == rhs) );
+	}
 }
 
 TEST_CASE( "size is calculated properly", "[sensitive_string_size]" ) {

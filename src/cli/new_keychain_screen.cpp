@@ -105,12 +105,12 @@ class GenerateKeychainScreen : public ScreenController {
 	    WindowManager *wmanager, std::filesystem::path db_path, crypto::PasswordHash pw_hash) :
 	    ScreenController(wmanager),
 	    db_path(std::move(db_path)), pw_hash(std::move(pw_hash)) {
-		std::vector<std::string> mnemonic = crypto::generate_mnemonic(24);
+		std::vector<utils::sensitive_string> mnemonic = crypto::generate_mnemonic(24);
 
 		// TODO(mmorusiewicz): should clear memory after use
 		std::string combined_mnemonic;
-		for (const std::string &word : mnemonic) {
-			combined_mnemonic += word;
+		for (const auto &word : mnemonic) {
+			combined_mnemonic += static_cast<std::string>(word);
 			if (word != mnemonic.back()) {
 				combined_mnemonic += ' ';
 			}

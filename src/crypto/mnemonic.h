@@ -26,9 +26,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 namespace crypto {
 
-std::vector<std::string> generate_mnemonic(int entropy_size);
-Seed mnemonic_to_seed(std::vector<std::string> words);
+struct sensitive_string;
 
-int find_word_index(std::string word);
+std::vector<utils::sensitive_string> generate_mnemonic(int entropy_size);
+Seed mnemonic_to_seed(const std::vector<utils::sensitive_string> &words);
+
+int find_word_index(const utils::sensitive_string &word);
 
 } // namespace crypto

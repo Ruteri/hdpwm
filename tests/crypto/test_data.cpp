@@ -24,11 +24,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <vector>
 
 struct mnemonic_data {
-	std::vector<std::string> mnemonic;
+	std::vector<utils::sensitive_string> mnemonic;
 	crypto::Seed expected_seed{};
 
 	mnemonic_data(std::string unparsed_mnemonic, std::string unparsed_seed) {
-		this->mnemonic = utils::split_string(unparsed_mnemonic);
+		for (auto word : utils::split_string(unparsed_mnemonic)) {
+			this->mnemonic.push_back(utils::sensitive_string(word));
+		}
+
 		if (!unparsed_seed.empty()) {
 			expected_seed = crypto::deserialize<crypto::Seed>(unparsed_seed);
 		}
