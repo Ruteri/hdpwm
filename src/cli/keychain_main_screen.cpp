@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <src/cli/error_screen.h>
 #include <src/cli/form_controller.h>
+#include <src/cli/help_screen.h>
 
 #include <curses.h>
 
@@ -77,8 +78,7 @@ void KeychainMainScreen::m_init() {
 	/* footer */
 
 	this->footer = newwin(1, this->maxcols / 5 * 3, this->maxlines - 1, 0);
-	mvwaddstr(this->footer, 0, 0,
-	    "<↑↓> to navigate | <n/N> to add new entry/group | <↲> to view | <e> to edit | <q> to quit");
+	mvwaddstr(this->footer, 0, 2, "<?> for help");
 
 	wrefresh(this->footer);
 }
@@ -193,6 +193,11 @@ void KeychainMainScreen::m_on_key(int key) {
 		break;
 	case 'q':
 		wmanager->pop_controller();
+		break;
+	case '?':
+		std::vector<const char *> help{"<↑↓> to navigate", "<n/N> to add new entry/group",
+		    "<↲> to view", "<e> to edit", "<q> to quit"};
+		wmanager->push_controller(std::make_shared<HelpScreen>(wmanager, std::move(help)));
 		break;
 	}
 }

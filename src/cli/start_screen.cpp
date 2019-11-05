@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <src/cli/start_screen.h>
 
+#include <src/cli/help_screen.h>
 #include <src/cli/new_keychain_screen.h>
 
 #include <curses.h>
@@ -45,15 +46,23 @@ void StartScreen::m_draw() {
 	mvaddstr(0, 0, "Deterministic password manager");
 
 	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 0, "<↑↓> to navigate | <↲> to accept | <q> to quit");
+	mvaddstr(maxlines, 2, "<?> for help");
 
 	start_screen_menu->draw();
 }
 
 void StartScreen::m_on_key(int key) {
-	if (key == 'q') {
+	switch (key) {
+	case 'q':
 		wmanager->stop();
-	} else {
+		break;
+	case '?': {
+		std::vector<const char *> help{"<↑↓> to navigate", "<↲> to accept", "<q> to quit"};
+		wmanager->push_controller(std::make_shared<HelpScreen>(wmanager, std::move(help)));
+		break;
+	}
+	default:
 		start_screen_menu->process_key(key);
+		break;
 	}
 }

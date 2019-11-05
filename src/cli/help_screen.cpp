@@ -1,4 +1,4 @@
-#[[
+/*
 
 Copyright (C) 2019 Mateusz Morusiewicz
 
@@ -15,13 +15,24 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-]]
-set(CURSES_NEED_NCURSES TRUE)
-set(CURSES_NEED_WIDE TRUE)
+*/
 
-find_package(Curses REQUIRED)
+#include <src/cli/help_screen.h>
 
-include_directories(${CURSES_INCLUDE_DIR})
+#include <curses.h>
 
-add_library(cli form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp new_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp start_screen.cpp help_screen.cpp)
-target_link_libraries(cli PUBLIC ${CURSES_LIBRARIES} keychain)
+HelpScreen::HelpScreen(WindowManager *wmanager, std::vector<const char *> opts) :
+    ScreenController(wmanager), opts(std::move(opts)) {}
+
+void HelpScreen::m_draw() {
+	clear();
+
+	for (int i = 0; i < static_cast<int>(opts.size()); ++i) {
+		mvaddstr(i + 2, 2, opts[i]);
+	}
+
+	int maxlines = LINES - 1;
+	mvaddstr(maxlines, 2, "Press any key to go back.");
+}
+
+void HelpScreen::m_on_key(int) { wmanager->pop_controller(); }

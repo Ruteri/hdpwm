@@ -1,4 +1,4 @@
-#[[
+/*
 
 Copyright (C) 2019 Mateusz Morusiewicz
 
@@ -15,13 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-]]
-set(CURSES_NEED_NCURSES TRUE)
-set(CURSES_NEED_WIDE TRUE)
+*/
 
-find_package(Curses REQUIRED)
+#include <src/cli/screen_controller.h>
 
-include_directories(${CURSES_INCLUDE_DIR})
+class HelpScreen : public ScreenController {
+	std::vector<const char *> opts;
 
-add_library(cli form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp new_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp start_screen.cpp help_screen.cpp)
-target_link_libraries(cli PUBLIC ${CURSES_LIBRARIES} keychain)
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+  public:
+	HelpScreen(WindowManager *wmanager, std::vector<const char *> opts);
+};
