@@ -126,7 +126,7 @@ void KeychainMainScreen::draw_entries_box() {
 		        [this, i](
 		            keychain::Entry::ptr entry) { draw_keychain_entry(this->main, i, entry); },
 		    },
-		    flat_entries_cache[i]);
+		    flat_entries_cache[i + n_to_skip]);
 
 		if (state == State::Browsing && i + n_to_skip == this->c_selected_index) {
 			wattroff(this->main, A_STANDOUT);
