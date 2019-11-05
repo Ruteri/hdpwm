@@ -28,7 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <vector>
 
 class KeychainMainScreen : public ScreenController {
-	enum class State { Browsing, Creating, Editing } state = State::Browsing;
+	enum class State { Browsing, CreatingOrDeleting, Editing } state = State::Browsing;
 
 	std::unique_ptr<keychain::Keychain> m_keychain;
 	keychain::Directory::ptr keychain_root_dir;
@@ -38,12 +38,17 @@ class KeychainMainScreen : public ScreenController {
 	int maxlines, maxcols;
 	WINDOW *header, *main, *details, *footer;
 
+	std::optional<keychain::AnyKeychainPtr> clipboard;
+	void paste_into_dir(keychain::Directory::ptr parent_dir);
+
 	void post_entry_form();
 	void post_directory_form();
 
 	void post_entry_view(keychain::Entry::ptr entry);
 	void post_dir_edit(keychain::Directory::ptr dir);
 	void post_entry_edit(keychain::Entry::ptr entry);
+	void post_dir_delete(keychain::Directory::ptr dir);
+	void post_entry_delete(keychain::Entry::ptr entry);
 
 	void draw_entries_box();
 	void draw_details_box();

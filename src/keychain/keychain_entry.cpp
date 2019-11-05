@@ -36,20 +36,20 @@ Entry::ptr deserialize_entry(const json &data, std::weak_ptr<Directory> parent) 
 	return std::make_shared<Entry>(meta, parent);
 }
 
-Directory::ptr deserialize_directory(const json &data, int dir_level) {
+Directory::ptr deserialize_directory(const json &data, Directory::ptr parent_ptr) {
 	DirectoryMeta meta{
 	    data["name"].get<std::string>(),
 	    data["details"].get<std::string>(),
 	};
 
-	auto dir = std::make_shared<Directory>(meta, dir_level);
+	auto dir = std::make_shared<Directory>(meta, parent_ptr);
 
 	for (const json &entry : data["entries"]) {
 		dir->entries.push_back(deserialize_entry(entry, dir));
 	}
 
 	for (const json &child_dir : data["dirs"]) {
-		dir->dirs.push_back(deserialize_directory(child_dir, dir_level + 1));
+		dir->dirs.push_back(deserialize_directory(child_dir, dir));
 	}
 
 	return dir;
@@ -73,6 +73,11 @@ json serialize_directory(Directory::ptr dir) {
 
 	return {{"name", dir->meta.name}, {"details", dir->meta.details}, {"dirs", std::move(dirs)},
 	    {"entries", std::move(entries)}};
+}
+
+Directory::ptr deep_copy_directory(Directory::ptr dir, Directory::ptr parent_dir) {
+	auto dir_data = serialize_directory(dir);
+	return deserialize_directory(dir_data, parent_dir);
 }
 
 namespace {

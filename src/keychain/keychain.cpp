@@ -116,7 +116,7 @@ Directory::ptr Keychain::get_root_dir() const {
 		throw std::runtime_error("could not get entries from db");
 	}
 
-	auto root = deserialize_directory(json::parse(db_entries), 0);
+	auto root = deserialize_directory(json::parse(db_entries), nullptr);
 	root->is_open = true;
 	return root;
 }

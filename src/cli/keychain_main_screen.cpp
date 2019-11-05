@@ -149,7 +149,7 @@ void KeychainMainScreen::draw_details_box() {
 
 void KeychainMainScreen::m_draw() {
 
-	if (state != State::Creating) draw_entries_box();
+	if (state != State::CreatingOrDeleting) draw_entries_box();
 	if (state == State::Browsing) draw_details_box();
 
 	wrefresh(this->main);
@@ -177,6 +177,12 @@ void KeychainMainScreen::m_on_key(int key) {
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
+	case 'n':
+		post_entry_form();
+		break;
+	case 'N':
+		post_directory_form();
+		break;
 	case 'e':
 		std::visit(
 		    overloaded{
@@ -185,21 +191,56 @@ void KeychainMainScreen::m_on_key(int key) {
 		    },
 		    flat_entries_cache[this->c_selected_index]);
 		break;
-	case 'n':
-		post_entry_form();
+	case 'c':
+		clipboard = flat_entries_cache[this->c_selected_index];
 		break;
-	case 'N':
-		post_directory_form();
+	case 'p':
+		if (!clipboard) return;
+		std::visit(
+		    overloaded{
+		        [this](keychain::Directory::ptr dir) { paste_into_dir(dir); },
+		        [this](keychain::Entry::ptr entry) { paste_into_dir(entry->parent_dir.lock()); },
+		    },
+		    flat_entries_cache[this->c_selected_index]);
+		break;
+	case 'x':
+		clipboard = flat_entries_cache[this->c_selected_index];
+		std::visit(
+		    overloaded{
+		        [this](keychain::Directory::ptr dir) { post_dir_delete(dir); },
+		        [this](keychain::Entry::ptr entry) { post_entry_delete(entry); },
+		    },
+		    flat_entries_cache[this->c_selected_index]);
 		break;
 	case 'q':
 		wmanager->pop_controller();
 		break;
 	case '?':
-		std::vector<const char *> help{"<↑↓> to navigate", "<n/N> to add new entry/group",
-		    "<↲> to view", "<e> to edit", "<q> to quit"};
+		std::vector<const char *> help{"<↑↓> to navigate", "<↲> to view",
+		    "<n/N> to add new entry/group", "<e> to edit",
+		    "<c|p|x/d> to copy|paste|cut/delete entry or group", "<q> to quit"};
 		wmanager->push_controller(std::make_shared<HelpScreen>(wmanager, std::move(help)));
 		break;
 	}
+}
+
+void KeychainMainScreen::paste_into_dir(keychain::Directory::ptr parent_dir) {
+	if (!clipboard) return;
+
+	std::visit(
+		overloaded{
+			[this, parent_dir](keychain::Directory::ptr dir) {
+				parent_dir->dirs.push_back(deep_copy_directory(dir, parent_dir));
+			},
+			[this, parent_dir](keychain::Entry::ptr entry) {
+				auto copied_entry = std::make_shared<keychain::Entry>(entry->meta, parent_dir);
+				parent_dir->entries.push_back(copied_entry);
+			}
+		},
+		clipboard.value());
+
+	m_keychain->save_entries(keychain_root_dir);
+	flat_entries_cache = flatten_dirs(keychain_root_dir);
 }
 
 void KeychainMainScreen::post_entry_form() {
@@ -258,7 +299,7 @@ void KeychainMainScreen::post_entry_form() {
 	entry_form_controller->add_field<StringInputHandler>("Entry name: ", on_name_accept);
 	entry_form_controller->add_field<StringInputHandler>("Details: ", on_details_accept);
 
-	state = State::Creating;
+	state = State::CreatingOrDeleting;
 	wmanager->push_controller(std::move(entry_form_controller));
 }
 
@@ -280,13 +321,11 @@ void KeychainMainScreen::post_directory_form() {
 		    overloaded{
 		        [this, &new_dir](keychain::Directory::ptr dir) {
 			        dir->is_open = true;
-			        dir->dirs.push_back(
-			            std::make_shared<keychain::Directory>(new_dir, dir->dir_level + 1));
+			        dir->dirs.push_back(std::make_shared<keychain::Directory>(new_dir, dir));
 		        },
 		        [this, &new_dir](keychain::Entry::ptr entry) {
 			        if (auto pd = entry->parent_dir.lock()) {
-				        pd->dirs.push_back(
-				            std::make_shared<keychain::Directory>(new_dir, pd->dir_level + 1));
+				        pd->dirs.push_back(std::make_shared<keychain::Directory>(new_dir, pd));
 			        }
 		        },
 		    },
@@ -310,7 +349,7 @@ void KeychainMainScreen::post_directory_form() {
 		return !name.empty();
 	};
 
-	state = State::Creating;
+	state = State::CreatingOrDeleting;
 	directory_form_controller->add_field<StringInputHandler>("Directory name: ", on_name_accept);
 
 	wmanager->push_controller(std::move(directory_form_controller));
@@ -395,4 +434,82 @@ void KeychainMainScreen::post_entry_edit(keychain::Entry::ptr entry) {
 
 	state = State::Editing;
 	wmanager->push_controller(std::move(entry_edit_form));
+}
+
+void KeychainMainScreen::post_dir_delete(keychain::Directory::ptr dir) {
+	auto confirm_result = std::make_shared<std::string>();
+
+	auto on_form_done = [this, confirm_result, dir]() {
+		state = State::Browsing;
+
+		if (*confirm_result == "y") {
+			auto &parent_dirs = dir->parent_dir.lock()->dirs;
+			parent_dirs.erase(std::remove(parent_dirs.begin(), parent_dirs.end(), dir));
+
+			m_keychain->save_entries(keychain_root_dir);
+			flat_entries_cache = flatten_dirs(keychain_root_dir);
+		}
+
+		this->wmanager->pop_controller();
+	};
+
+	auto on_form_cancel = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
+
+	auto confirm_delete_form =
+	    std::make_unique<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
+
+	auto on_confirm_delete = [confirm_result](const std::string &state) {
+		*confirm_result = state;
+		return state.empty() || state == "y" || state == "n";
+	};
+
+	std::string confirmation_query =
+	    "Are you sure you want to delete directory " + dir->meta.name + "? (y/n) [n]: ";
+	confirm_delete_form->add_field<StringInputHandler>(
+	    Point{1, 0}, confirmation_query, on_confirm_delete);
+
+	state = State::CreatingOrDeleting;
+	wmanager->push_controller(std::move(confirm_delete_form));
+}
+
+void KeychainMainScreen::post_entry_delete(keychain::Entry::ptr entry) {
+	auto confirm_result = std::make_shared<std::string>();
+
+	auto on_form_done = [this, confirm_result, entry]() {
+		state = State::Browsing;
+
+		if (*confirm_result == "y") {
+			auto &parent_entries = entry->parent_dir.lock()->entries;
+			parent_entries.erase(std::remove(parent_entries.begin(), parent_entries.end(), entry));
+
+			m_keychain->save_entries(keychain_root_dir);
+			flat_entries_cache = flatten_dirs(keychain_root_dir);
+		}
+
+		this->wmanager->pop_controller();
+	};
+
+	auto on_form_cancel = [this]() {
+		state = State::Browsing;
+		this->wmanager->pop_controller();
+	};
+
+	auto confirm_delete_form =
+	    std::make_unique<FormController>(wmanager, this, this->main, on_form_done, on_form_cancel);
+
+	auto on_confirm_delete = [confirm_result](const std::string &state) {
+		*confirm_result = state;
+		return state.empty() || state == "y" || state == "n";
+	};
+
+	std::string confirmation_query =
+	    "Are you sure you want to delete entry " + entry->meta.name + "? (y/n) [n]: ";
+	confirm_delete_form->add_field<StringInputHandler>(
+	    Point{1, 0}, confirmation_query, on_confirm_delete);
+
+	state = State::CreatingOrDeleting;
+	wmanager->push_controller(std::move(confirm_delete_form));
 }
