@@ -1,3 +1,17 @@
+# Hierarchical deterministic password manager
+
+## Compilation Instructions
+
+**MACOS (10.15)**  
+This project requires an `ncurses` implementation, you can use homebrew to get one:
+```bash
+$ brew install ncurses
+```
+Then it's time to compile with:
+```bash
+$ cmake .
+$ make
+```
 ## What is this password manager
 
 This is a proof-of-concept deterministic mnemonic-based password manager. It utilizes the seed generated from mnemonic<sup>\[[2](#BIP-39)\]</sup> to provision secrets<sup>\[[1](#BIP-32)\]</sup> (as of now - passwords). This allows for synchronization of passwords across devices without the need to store _any_ secrets on third-party servers. After synchronization of the metadata (password groups, names and details) via third-party servers, the passwords are generated from mnemonic inputted by the user on each new device.

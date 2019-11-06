@@ -1,0 +1,16 @@
+Makefile
+CMakeFiles
+CMakeCache.txt
+compile_commands.json
+*.cmake
+*.a
+*.o
+*.cbp
+src/hdpmanager
+tests/unittests
+
+#ignore leveldb test and benchmarks
+external/leveldb/*_test
+external/leveldb/*_bench*
+external/leveldb/include/port
+external/leveldb/leveldbutil

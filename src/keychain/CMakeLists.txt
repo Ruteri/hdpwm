@@ -19,4 +19,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 include_directories(${LEVELDB_PUBLIC_INCLUDE_DIR})
 
 add_library(keychain STATIC keychain.cpp db.cpp keychain_entry.cpp)
-target_link_libraries(keychain PUBLIC stdc++fs crypto PRIVATE leveldb utils)
+
+# With OSX 10.15 stdc++fs is build in in libc++, no need to link it separately
+if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    target_link_libraries(keychain PUBLIC crypto PRIVATE leveldb utils)
+else()
+    target_link_libraries(keychain PUBLIC stdc++fs crypto PRIVATE leveldb utils)
+endif()

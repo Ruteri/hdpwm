@@ -17,10 +17,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ]]
 set(CURSES_NEED_NCURSES TRUE)
-set(CURSES_NEED_WIDE TRUE)
+
+# The packaged ncurses in macosx homebrew are already containing wide-char support
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(CURSES_NEED_WIDE TRUE)
+endif()
 
 find_package(Curses REQUIRED)
-
 include_directories(${CURSES_INCLUDE_DIR})
 
 add_library(cli form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp new_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp start_screen.cpp help_screen.cpp)
