@@ -22,6 +22,7 @@ The mnemonic at the heart of this password manager is not.
 0. Create working proof of concept
 1. Define a roadmap
 2. Formally specify seed generation, secret derivation and metadata exchange format
+3. Browser integration! https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Native_messaging and https://developer.chrome.com/apps/nativeMessaging will be a good start.
 
 
 ## Contributing
@@ -31,23 +32,25 @@ Contributions are welcome! Please remember to run clang-format and clang-tidy be
 
 ## Requirements
 
-Build requirements: cmake, gcc>=8 or clang>=6, ncursesw.
+Build requirements: cmake, gcc(>=8) or clang(>=6), ncursesw.
 
-Develompent: all of the above + clang-tidy and clang-format.
+Develompent: all of the above + clang-tidy and clang-format(=6).
 
 ## Compilation Instructions
 
-**MACOS (10.15)**  
-This project requires an `ncurses` implementation, you can use homebrew to get one:
-```bash
-$ brew install ncurses
-```
-Then it's time to compile with:
+### General
+
 ```bash
 $ mkdir build
 $ cd build
 $ cmake ..
-$ make
+$ make [-j6]
+```
+
+### MACOS (10.15) 
+This project requires an `ncurses` implementation, you can use homebrew to get one:
+```bash
+$ brew install ncurses
 ```
 
 ## License
