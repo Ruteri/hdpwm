@@ -17,18 +17,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#pragma once
+#include <src/tui/color.h>
 
-#include <src/cli/fwd.h>
+#include <curses.h>
 
-void init_colors();
+void init_colors() {
+	use_default_colors();
+	start_color();
+	init_pair(static_cast<int>(ColorPair::DEFAULT), -1, -1);
+	init_pair(static_cast<int>(ColorPair::ALL_RED), COLOR_RED, COLOR_RED);
+}
 
-enum class ColorPair : int { DEFAULT = 0, ALL_RED = 1 };
-
-struct ColorGuard {
-	WINDOW *window;
-	ColorPair color_pair;
-
-	ColorGuard(WINDOW *window, ColorPair color_pair);
-	~ColorGuard();
-};
+ColorGuard::ColorGuard(WINDOW *window, ColorPair color_pair) :
+    window(window), color_pair(color_pair) {
+	wattron(window, COLOR_PAIR(static_cast<int>(color_pair)));
+}
+ColorGuard::~ColorGuard() { wattroff(window, COLOR_PAIR(static_cast<int>(color_pair))); }

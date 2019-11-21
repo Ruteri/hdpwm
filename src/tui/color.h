@@ -17,28 +17,18 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/output.h>
+#pragma once
 
-#include <src/cli/color.h>
+#include <src/tui/fwd.h>
 
-#include <curses.h>
+void init_colors();
 
-void OutputHandler::draw() { m_draw(stdscr); }
+enum class ColorPair : int { DEFAULT = 0, ALL_RED = 1 };
 
-void OutputHandler::draw(WINDOW *window) { m_draw(window); }
+struct ColorGuard {
+	WINDOW *window;
+	ColorPair color_pair;
 
-void StringOutputHandler::m_draw(WINDOW *window) {
-	wmove(window, origin.row, origin.col);
-	wclrtoeol(window);
-	mvwaddstr(window, origin.row, origin.col, output.c_str());
-}
-
-void SensitiveOutputHandler::m_draw(WINDOW *window) {
-	wmove(window, origin.row, origin.col);
-	wclrtoeol(window);
-
-	ColorGuard cg{window, ColorPair::ALL_RED};
-	for (size_t i = 0; i < sensitive_output.size(); ++i) {
-		waddch(window, sensitive_output.data[i]);
-	}
-}
+	ColorGuard(WINDOW *window, ColorPair color_pair);
+	~ColorGuard();
+};

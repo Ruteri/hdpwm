@@ -19,8 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <src/cli/fwd.h>
-#include <src/cli/screen_controller.h>
+#include <src/tui/fwd.h>
+#include <src/tui/screen_controller.h>
 
 #include <src/keychain/keychain.h>
 

@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 add_subdirectory(utils)
 add_subdirectory(crypto)
 add_subdirectory(keychain)
-add_subdirectory(cli)
+add_subdirectory(tui)
 
-add_executable(hdpmanager main.cpp)
-target_link_libraries(hdpmanager PRIVATE cli crypto)
+add_executable(hdpmanager tui/tui.cpp)
+target_link_libraries(hdpmanager PRIVATE tui crypto)

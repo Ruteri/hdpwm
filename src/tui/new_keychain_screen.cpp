@@ -17,12 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/new_keychain_screen.h>
+#include <src/tui/new_keychain_screen.h>
 
-#include <src/cli/error_screen.h>
-#include <src/cli/form_controller.h>
-#include <src/cli/input.h>
-#include <src/cli/keychain_main_screen.h>
+#include <src/tui/error_screen.h>
+#include <src/tui/form_controller.h>
+#include <src/tui/input.h>
+#include <src/tui/keychain_main_screen.h>
 
 #include <src/crypto/crypto.h>
 #include <src/crypto/mnemonic.h>

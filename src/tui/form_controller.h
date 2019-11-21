@@ -19,11 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <src/cli/fwd.h>
-#include <src/cli/input.h>
-#include <src/cli/manager.h>
-#include <src/cli/output.h>
-#include <src/cli/screen_controller.h>
+#include <src/tui/fwd.h>
+#include <src/tui/input.h>
+#include <src/tui/manager.h>
+#include <src/tui/output.h>
+#include <src/tui/screen_controller.h>
 
 #include <functional>
 #include <memory>

@@ -17,19 +17,35 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/error_screen.h>
+#pragma once
 
-#include <curses.h>
+#include <src/tui/fwd.h>
+#include <src/tui/screen_controller.h>
 
-ErrorScreen::ErrorScreen(WindowManager *wmanager, Point origin, std::string msg) :
-    ScreenController(wmanager), origin(origin), msg(std::move(msg)) {}
+#include <memory>
 
-void ErrorScreen::m_draw() {
-	clear();
-	mvaddstr(origin.row, origin.col, "Encountered the following error:");
-	mvaddstr(origin.row + 1, origin.col + 2, msg.c_str());
-	addstr(". Press any key to continue.");
-	noecho();
-}
+class NewKeychainScreen : public ScreenController {
+	WINDOW *window;
+	bool form_posted = false;
+	void post_import_form();
 
-void ErrorScreen::m_on_key(int) { wmanager->pop_controller(); }
+	void m_init() override;
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+  public:
+	NewKeychainScreen(WindowManager *wmanager);
+};
+
+class ImportKeychainScreen : public ScreenController {
+	WINDOW *window;
+	bool form_posted = false;
+	void post_import_form();
+
+	void m_init() override;
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+  public:
+	ImportKeychainScreen(WindowManager *wmanager);
+};

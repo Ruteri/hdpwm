@@ -17,19 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/color.h>
+#include <src/tui/screen_controller.h>
 
-#include <curses.h>
+#include <src/tui/menu.h>
 
-void init_colors() {
-	use_default_colors();
-	start_color();
-	init_pair(static_cast<int>(ColorPair::DEFAULT), -1, -1);
-	init_pair(static_cast<int>(ColorPair::ALL_RED), COLOR_RED, COLOR_RED);
-}
+class StartScreen : public ScreenController {
+	std::unique_ptr<BasicMenu> start_screen_menu;
 
-ColorGuard::ColorGuard(WINDOW *window, ColorPair color_pair) :
-    window(window), color_pair(color_pair) {
-	wattron(window, COLOR_PAIR(static_cast<int>(color_pair)));
-}
-ColorGuard::~ColorGuard() { wattroff(window, COLOR_PAIR(static_cast<int>(color_pair))); }
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+  public:
+	StartScreen(WindowManager *wmanager);
+};

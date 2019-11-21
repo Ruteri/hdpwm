@@ -17,10 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/start_screen.h>
+#include <src/tui/start_screen.h>
 
-#include <src/cli/help_screen.h>
-#include <src/cli/new_keychain_screen.h>
+#include <src/tui/help_screen.h>
+#include <src/tui/new_keychain_screen.h>
 
 #include <curses.h>
 

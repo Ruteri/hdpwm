@@ -17,9 +17,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/menu.h>
+#include <src/tui/menu.h>
 
-#include <src/cli/utils.h>
+#include <src/tui/utils.h>
 
 #include <curses.h>
 

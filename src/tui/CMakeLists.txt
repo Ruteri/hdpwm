@@ -1,4 +1,4 @@
-/*
+#[[
 
 Copyright (C) 2019 Mateusz Morusiewicz
 
@@ -15,34 +15,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-*/
+]]
+set(CURSES_NEED_NCURSES TRUE)
 
-#pragma once
+# The packaged ncurses in macosx homebrew are already containing wide-char support
+if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set(CURSES_NEED_WIDE TRUE)
+endif()
 
-#include <src/cli/utils.h>
+find_package(Curses REQUIRED)
+include_directories(${CURSES_INCLUDE_DIR})
 
-#include <functional>
-#include <string>
-#include <vector>
-
-/* forward declare as ncurses define OK which breaks leveldb */
-struct _win_st;
-typedef struct _win_st WINDOW;
-
-struct BasicMenuEntry {
-	std::string title;
-	std::function<void()> on_accept;
-};
-
-class BasicMenu {
-	size_t c_selected = 0;
-	Point origin_pos;
-	std::vector<BasicMenuEntry> links;
-
-  public:
-	BasicMenu(std::vector<BasicMenuEntry> links, Point pos = {0, 0});
-
-	void draw();
-	void draw(WINDOW *scr);
-	void process_key(int key);
-};
+add_library(tui form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp new_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp start_screen.cpp help_screen.cpp)
+target_link_libraries(tui PUBLIC ${CURSES_LIBRARIES} keychain)

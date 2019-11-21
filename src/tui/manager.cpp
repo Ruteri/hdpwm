@@ -17,12 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/manager.h>
+#include <src/tui/manager.h>
 
-#include <src/cli/color.h>
-#include <src/cli/error_screen.h>
-#include <src/cli/screen_controller.h>
-#include <src/cli/utils.h>
+#include <src/tui/color.h>
+#include <src/tui/error_screen.h>
+#include <src/tui/screen_controller.h>
+#include <src/tui/utils.h>
 
 #include <curses.h>
 #include <locale.h>

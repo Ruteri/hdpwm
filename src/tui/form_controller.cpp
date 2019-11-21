@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/form_controller.h>
+#include <src/tui/form_controller.h>
 
 #include <curses.h>
 

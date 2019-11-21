@@ -17,19 +17,28 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#pragma once
+#include <src/tui/output.h>
 
-#include <src/cli/manager.h>
-#include <src/cli/screen_controller.h>
-#include <src/cli/utils.h>
+#include <src/tui/color.h>
 
-class ErrorScreen : public ScreenController {
-	Point origin;
-	std::string msg;
+#include <curses.h>
 
-	void m_draw() override;
-	void m_on_key(int) override;
+void OutputHandler::draw() { m_draw(stdscr); }
 
-  public:
-	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg);
-};
+void OutputHandler::draw(WINDOW *window) { m_draw(window); }
+
+void StringOutputHandler::m_draw(WINDOW *window) {
+	wmove(window, origin.row, origin.col);
+	wclrtoeol(window);
+	mvwaddstr(window, origin.row, origin.col, output.c_str());
+}
+
+void SensitiveOutputHandler::m_draw(WINDOW *window) {
+	wmove(window, origin.row, origin.col);
+	wclrtoeol(window);
+
+	ColorGuard cg{window, ColorPair::ALL_RED};
+	for (size_t i = 0; i < sensitive_output.size(); ++i) {
+		waddch(window, sensitive_output.data[i]);
+	}
+}

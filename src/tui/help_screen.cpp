@@ -17,16 +17,22 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/screen_controller.h>
+#include <src/tui/help_screen.h>
 
-#include <src/cli/menu.h>
+#include <curses.h>
 
-class StartScreen : public ScreenController {
-	std::unique_ptr<BasicMenu> start_screen_menu;
+HelpScreen::HelpScreen(WindowManager *wmanager, std::vector<const char *> opts) :
+    ScreenController(wmanager), opts(std::move(opts)) {}
 
-	void m_draw() override;
-	void m_on_key(int key) override;
+void HelpScreen::m_draw() {
+	clear();
 
-  public:
-	StartScreen(WindowManager *wmanager);
-};
+	for (int i = 0; i < static_cast<int>(opts.size()); ++i) {
+		mvaddstr(i + 2, 2, opts[i]);
+	}
+
+	int maxlines = LINES - 1;
+	mvaddstr(maxlines, 2, "Press any key to go back.");
+}
+
+void HelpScreen::m_on_key(int) { wmanager->pop_controller(); }

@@ -17,14 +17,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/manager.h>
-#include <src/cli/start_screen.h>
+#pragma once
 
-int main() {
+#include <src/tui/manager.h>
+#include <src/tui/screen_controller.h>
+#include <src/tui/utils.h>
 
-	WindowManager wm;
-	wm.set_controller(std::make_shared<StartScreen>(&wm));
-	wm.run();
+class ErrorScreen : public ScreenController {
+	Point origin;
+	std::string msg;
 
-	return 0;
-}
+	void m_draw() override;
+	void m_on_key(int) override;
+
+  public:
+	ErrorScreen(WindowManager *wmanager, Point origin, std::string msg);
+};

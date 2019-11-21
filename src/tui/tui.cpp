@@ -17,22 +17,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/cli/help_screen.h>
+#include <src/tui/manager.h>
+#include <src/tui/start_screen.h>
 
-#include <curses.h>
+int main() {
 
-HelpScreen::HelpScreen(WindowManager *wmanager, std::vector<const char *> opts) :
-    ScreenController(wmanager), opts(std::move(opts)) {}
+	WindowManager wm;
+	wm.set_controller(std::make_shared<StartScreen>(&wm));
+	wm.run();
 
-void HelpScreen::m_draw() {
-	clear();
-
-	for (int i = 0; i < static_cast<int>(opts.size()); ++i) {
-		mvaddstr(i + 2, 2, opts[i]);
-	}
-
-	int maxlines = LINES - 1;
-	mvaddstr(maxlines, 2, "Press any key to go back.");
+	return 0;
 }
-
-void HelpScreen::m_on_key(int) { wmanager->pop_controller(); }

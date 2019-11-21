@@ -19,8 +19,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <src/cli/fwd.h>
-#include <src/cli/utils.h>
+#include <src/tui/fwd.h>
+#include <src/tui/utils.h>
 
 #include <src/crypto/utils.h>
 
