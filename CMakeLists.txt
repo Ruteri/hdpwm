@@ -23,7 +23,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(LEVELDB_BUILD_TESTS OFF)
+set(LEVELDB_BUILD_BENCHMARKS OFF)
 add_subdirectory(external/leveldb)
+
+set(ARGPARSE_BUILD_TESTS OFF)
+add_subdirectory(external/p-ranav/argparse)
+
 add_compile_options(-Wall -Wextra -Wpedantic)
 
 # TODO: add CMakeLists.txt (or at least proper generation) to cryptopp
