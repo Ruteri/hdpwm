@@ -22,20 +22,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/tui/fwd.h>
 #include <src/tui/screen_controller.h>
 
-#include <memory>
 #include <filesystem>
 
-class ImportKeychainScreen : public ScreenController {
+class OpenKeychainScreen : public ScreenController {
 	WINDOW *window;
 	const std::filesystem::path kc_path;
 
 	bool form_posted = false;
-	void post_import_form();
+	void post_open_form();
 
 	void m_init() override;
 	void m_draw() override;
 	void m_on_key(int key) override;
 
   public:
-	ImportKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path);
+	OpenKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path);
 };

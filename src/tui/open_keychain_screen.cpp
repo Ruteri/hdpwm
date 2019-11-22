@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/tui/import_keychain_screen.h>
+#include <src/tui/open_keychain_screen.h>
 
 #include <src/tui/error_screen.h>
 #include <src/tui/form_controller.h>
@@ -25,33 +25,30 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/tui/keychain_main_screen.h>
 
 #include <src/crypto/crypto.h>
-#include <src/crypto/mnemonic.h>
 #include <src/crypto/utils.h>
 #include <src/keychain/keychain.h>
 
 #include <curses.h>
 
-#include <filesystem>
-#include <memory>
 #include <optional>
+#include <memory>
 #include <string>
-#include <vector>
 
 struct DBInputResult {
 	std::optional<crypto::PasswordHash> pw_hash{};
 };
 
-ImportKeychainScreen::ImportKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path) :
+OpenKeychainScreen::OpenKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path) :
     ScreenController(wmanager), window(stdscr), kc_path(kc_path) {}
 
-void ImportKeychainScreen::m_init() {
+void OpenKeychainScreen::m_init() {
 	if (!form_posted) {
 		form_posted = true;
-		post_import_form();
+		post_open_form();
 	}
 }
 
-void ImportKeychainScreen::post_import_form() {
+void OpenKeychainScreen::post_open_form() {
 	std::shared_ptr<DBInputResult> result = std::make_shared<DBInputResult>();
 
 	auto on_form_done = [this, result]() {
@@ -85,11 +82,11 @@ void ImportKeychainScreen::post_import_form() {
 	wmanager->push_controller(form_controller);
 }
 
-void ImportKeychainScreen::m_draw() {
+void OpenKeychainScreen::m_draw() {
 	wclear(window);
 
-	mvaddstr(0, 0, "Importing keychain ");
+	mvaddstr(0, 0, "Opening keychain ");
 	waddstr(window, kc_path.c_str());
 }
 
-void ImportKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }
+void OpenKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }
