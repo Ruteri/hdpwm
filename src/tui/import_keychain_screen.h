@@ -1,4 +1,4 @@
-#[[
+/*
 
 Copyright (C) 2019 Mateusz Morusiewicz
 
@@ -15,14 +15,27 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-]]
-include_directories(${LEVELDB_PUBLIC_INCLUDE_DIR})
+*/
 
-add_library(keychain STATIC keychain.cpp db.cpp keychain_entry.cpp utils.cpp)
+#pragma once
 
-# With OSX 10.15 stdc++fs is build in in libc++, no need to link it separately
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_link_libraries(keychain PUBLIC crypto PRIVATE leveldb utils)
-else()
-    target_link_libraries(keychain PUBLIC stdc++fs crypto PRIVATE leveldb utils)
-endif()
+#include <src/tui/fwd.h>
+#include <src/tui/screen_controller.h>
+
+#include <memory>
+#include <filesystem>
+
+class ImportKeychainScreen : public ScreenController {
+	WINDOW *window;
+	const std::filesystem::path kc_path;
+
+	bool form_posted = false;
+	void post_import_form();
+
+	void m_init() override;
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+  public:
+	ImportKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path);
+};

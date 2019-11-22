@@ -55,7 +55,7 @@ class WindowManager {
 	WindowManager();
 	~WindowManager();
 
-	void run();
+	void run(std::shared_ptr<ScreenController> initial_screen);
 
 	void set_controller(std::shared_ptr<ScreenController> new_controller);
 	void push_controller(std::shared_ptr<ScreenController> new_controller);

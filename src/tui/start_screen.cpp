@@ -26,7 +26,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 StartScreen::StartScreen(WindowManager *wmanager) : ScreenController(wmanager) {
 	std::vector<BasicMenuEntry> start_screen_menu_entries = {
-	    {"Import keychain",
+	    /*
+		{"Import keychain",
 	        [wmanager]() {
 		        wmanager->push_controller(std::make_shared<ImportKeychainScreen>(wmanager));
 	        }},
@@ -34,6 +35,7 @@ StartScreen::StartScreen(WindowManager *wmanager) : ScreenController(wmanager) {
 	        [wmanager]() {
 		        wmanager->push_controller(std::make_shared<NewKeychainScreen>(wmanager));
 	        }},
+		*/
 	    {"Exit", [wmanager]() { wmanager->stop(); }},
 	};
 

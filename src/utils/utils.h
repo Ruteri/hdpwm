@@ -28,4 +28,14 @@ std::vector<std::string> split_string(std::string str);
 
 void print_bytes(void *buffer, int size);
 
+struct Result {
+	bool valid;
+	std::string_view reason;
+
+	static Result Ok() { return Result{true, ""}; }
+	static Result Err(std::string_view reason) { return Result{false, reason}; }
+
+	explicit operator bool() const { return valid; }
+};
+
 } // namespace utils

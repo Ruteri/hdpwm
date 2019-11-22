@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
-#include <src/tui/new_keychain_screen.h>
+#include <src/tui/import_keychain_screen.h>
 
 #include <src/tui/error_screen.h>
 #include <src/tui/form_controller.h>
@@ -41,69 +41,26 @@ struct DBInputResult {
 	std::optional<crypto::PasswordHash> pw_hash{};
 };
 
-class GenerateKeychainScreen : public ScreenController {
-	std::filesystem::path db_path;
-	crypto::PasswordHash pw_hash;
-	crypto::Seed seed;
-	std::vector<std::unique_ptr<StringOutputHandler>> outputs;
-
-	void m_draw() override {
-		for (auto &output : outputs) {
-			output->draw();
-		}
-	}
-
-	void m_on_key(int) override {
-		auto keychain = keychain::Keychain::initialize_with_seed(
-		    this->db_path, std::move(this->seed), std::move(this->pw_hash));
-		this->wmanager->set_controller(
-		    std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
-	}
-
-  public:
-	GenerateKeychainScreen(
-	    WindowManager *wmanager, std::filesystem::path db_path, crypto::PasswordHash pw_hash) :
-	    ScreenController(wmanager),
-	    db_path(std::move(db_path)), pw_hash(std::move(pw_hash)) {
-		std::vector<utils::sensitive_string> mnemonic = crypto::generate_mnemonic(24);
-
-		// TODO(mmorusiewicz): should clear memory after use
-		std::string combined_mnemonic;
-		for (const auto &word : mnemonic) {
-			combined_mnemonic += static_cast<std::string>(word);
-			if (word != mnemonic.back()) {
-				combined_mnemonic += ' ';
-			}
-		}
-
-		seed = crypto::mnemonic_to_seed(std::move(mnemonic));
-
-		outputs.push_back(std::make_unique<StringOutputHandler>(Point{3, 5},
-		    "Please write down the following mnemonic and press any key to continue."));
-		outputs.push_back(std::make_unique<StringOutputHandler>(Point{4, 5}, combined_mnemonic));
-	}
-};
-
-NewKeychainScreen::NewKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path):
+ImportKeychainScreen::ImportKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path) :
     ScreenController(wmanager), window(stdscr), kc_path(kc_path) {}
 
-void NewKeychainScreen::m_init() {
+void ImportKeychainScreen::m_init() {
 	if (!form_posted) {
 		form_posted = true;
 		post_import_form();
 	}
 }
 
-void NewKeychainScreen::post_import_form() {
+void ImportKeychainScreen::post_import_form() {
 	std::shared_ptr<DBInputResult> result = std::make_shared<DBInputResult>();
 
 	auto on_form_done = [this, result]() {
 		this->wmanager->pop_controller();
-
 		try {
-			this->wmanager->set_controller(std::make_shared<GenerateKeychainScreen>(
-			    wmanager, this->kc_path, std::move(result->pw_hash.value())));
-
+			auto keychain =
+			    keychain::Keychain::open(this->kc_path, result->pw_hash.value());
+			this->wmanager->set_controller(
+			    std::make_shared<KeychainMainScreen>(this->wmanager, std::move(keychain)));
 		} catch (const std::exception &e) {
 			this->wmanager->set_controller(
 			    std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
@@ -128,11 +85,11 @@ void NewKeychainScreen::post_import_form() {
 	wmanager->push_controller(form_controller);
 }
 
-void NewKeychainScreen::m_draw() {
+void ImportKeychainScreen::m_draw() {
 	wclear(window);
 
-	mvwaddstr(window, 0, 0, "Creating new keychain ");
+	mvaddstr(0, 0, "Importing keychain ");
 	waddstr(window, kc_path.c_str());
 }
 
-void NewKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }
+void ImportKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }

@@ -23,9 +23,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/tui/screen_controller.h>
 
 #include <memory>
+#include <filesystem>
 
 class NewKeychainScreen : public ScreenController {
 	WINDOW *window;
+	const std::filesystem::path kc_path;
+
 	bool form_posted = false;
 	void post_import_form();
 
@@ -34,18 +37,5 @@ class NewKeychainScreen : public ScreenController {
 	void m_on_key(int key) override;
 
   public:
-	NewKeychainScreen(WindowManager *wmanager);
-};
-
-class ImportKeychainScreen : public ScreenController {
-	WINDOW *window;
-	bool form_posted = false;
-	void post_import_form();
-
-	void m_init() override;
-	void m_draw() override;
-	void m_on_key(int key) override;
-
-  public:
-	ImportKeychainScreen(WindowManager *wmanager);
+	NewKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path);
 };

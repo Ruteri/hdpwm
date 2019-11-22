@@ -1,4 +1,4 @@
-#[[
+/*
 
 Copyright (C) 2019 Mateusz Morusiewicz
 
@@ -15,14 +15,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-]]
-include_directories(${LEVELDB_PUBLIC_INCLUDE_DIR})
+*/
 
-add_library(keychain STATIC keychain.cpp db.cpp keychain_entry.cpp utils.cpp)
+#pragma once
 
-# With OSX 10.15 stdc++fs is build in in libc++, no need to link it separately
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_link_libraries(keychain PUBLIC crypto PRIVATE leveldb utils)
-else()
-    target_link_libraries(keychain PUBLIC stdc++fs crypto PRIVATE leveldb utils)
-endif()
+#include <src/utils/utils.h>
+
+#include <filesystem>
+
+namespace keychain {
+
+std::filesystem::path expand_path(const std::string &path);
+
+// Or: Result<enum DBState { can_import, can_create, invalid }>
+utils::Result can_import_db_from_path(const std::filesystem::path &path);
+utils::Result can_create_db_at_path(const std::filesystem::path &path);
+
+} // namespace keychain
