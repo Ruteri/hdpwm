@@ -26,21 +26,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string>
 #include <vector>
 
-BasicMenu::BasicMenu(std::vector<BasicMenuEntry> links, Point pos) :
-    origin_pos(pos), links(std::move(links)) {}
+AnyBasicMenu::AnyBasicMenu(Point pos) : origin_pos(pos) {}
 
-void BasicMenu::draw() { return this->draw(stdscr); }
+void AnyBasicMenu::m_draw(WINDOW *scr) {
+	curs_set(0); // cursor will be properly reset by form controller
 
-void BasicMenu::draw(WINDOW *scr) {
 	int maxr, maxc;
 	getmaxyx(scr, maxr, maxc);
 
 	int max_entries = maxr - origin_pos.row - 1;
 	int n_to_skip = std::max(0, static_cast<int>(this->c_selected) - max_entries + 1);
-	for (int i = 0; i < std::min(max_entries, static_cast<int>(this->links.size())); ++i) {
+	for (int i = 0; i < std::min(max_entries, static_cast<int>(this->entries_size())); ++i) {
 		wmove(scr, origin_pos.row + i, 0);
 		wclrtoeol(scr);
-		std::string &to_print = links[i + n_to_skip].title;
+		std::string to_print = this->title_at(i + n_to_skip);
 		if (i + n_to_skip == this->c_selected) {
 			wattron(scr, A_STANDOUT);
 			mvwaddstr(scr, origin_pos.row + i, origin_pos.col, to_print.c_str());
@@ -51,18 +50,17 @@ void BasicMenu::draw(WINDOW *scr) {
 	}
 }
 
-void BasicMenu::process_key(int key) {
+void AnyBasicMenu::process_key(int key) {
 	switch (key) {
 	case KEY_DOWN:
-		c_selected = (c_selected + 1) % links.size();
+		c_selected = (c_selected + 1) % this->entries_size();
 		break;
 	case KEY_UP:
-		c_selected = (links.size() + c_selected - 1) % links.size();
+		c_selected = (this->entries_size() + c_selected - 1) % this->entries_size();
 		break;
-	case KEY_RIGHT:
 	case KEY_ENTER:
 	case KEY_RETURN:
-		links[c_selected].on_accept();
+		this->on_accept(c_selected);
 		break;
 	}
 }

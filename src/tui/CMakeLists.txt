@@ -26,5 +26,5 @@ endif()
 find_package(Curses REQUIRED)
 include_directories(${CURSES_INCLUDE_DIR})
 
-add_library(tui form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp open_keychain_screen.cpp new_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp start_screen.cpp help_screen.cpp)
+add_library(tui form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp open_keychain_screen.cpp new_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp help_screen.cpp)
 target_link_libraries(tui PUBLIC ${CURSES_LIBRARIES} keychain)

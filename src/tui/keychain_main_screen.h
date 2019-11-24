@@ -30,7 +30,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 class KeychainMainScreen : public ScreenController {
 	enum class State { Browsing, CreatingOrDeleting, Editing } state = State::Browsing;
 
-	std::unique_ptr<keychain::Keychain> m_keychain;
+	std::shared_ptr<keychain::Keychain> m_keychain;
 	keychain::Directory::ptr keychain_root_dir;
 	std::vector<keychain::AnyKeychainPtr> flat_entries_cache;
 	int c_selected_index = 0;
@@ -59,6 +59,6 @@ class KeychainMainScreen : public ScreenController {
 	void m_on_key(int key) override;
 
   public:
-	KeychainMainScreen(WindowManager *, std::unique_ptr<keychain::Keychain>);
+	KeychainMainScreen(WindowManager *, std::shared_ptr<keychain::Keychain>);
 	~KeychainMainScreen();
 };

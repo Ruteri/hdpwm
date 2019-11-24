@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <src/tui/input.h>
 #include <src/tui/utils.h>
 
 #include <functional>
@@ -29,20 +30,40 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 struct _win_st;
 typedef struct _win_st WINDOW;
 
-struct BasicMenuEntry {
-	std::string title;
-	std::function<void()> on_accept;
-};
-
-class BasicMenu {
-	size_t c_selected = 0;
+/* Can also be made template by entry type if needed */
+class AnyBasicMenu : public InputHandler {
 	Point origin_pos;
-	std::vector<BasicMenuEntry> links;
+	size_t c_selected = 0;
+
+	virtual void m_draw(WINDOW *window) final;
+
+  private:
+	/* tokenization interface */
+	virtual size_t entries_size() = 0;
+	virtual const char *title_at(size_t) = 0;
+	virtual void on_accept(size_t) = 0;
 
   public:
-	BasicMenu(std::vector<BasicMenuEntry> links, Point pos = {0, 0});
+	AnyBasicMenu(Point pos);
 
-	void draw();
-	void draw(WINDOW *scr);
-	void process_key(int key);
+	void process_key(int key) final;
+};
+
+template <typename EntryType> /* requires std::string title field */
+class TokenizedMenu : public AnyBasicMenu {
+  public:
+	using ValueCallback = std::function<void(const EntryType &)>;
+	using UValue = EntryType;
+
+  private:
+	std::vector<EntryType> entries;
+	ValueCallback on_accept_cb;
+
+	const char *title_at(size_t i) override { return entries[i].title.c_str(); }
+	void on_accept(size_t i) override { on_accept_cb(entries[i]); }
+	size_t entries_size() override { return entries.size(); }
+
+  public:
+	TokenizedMenu(Point pos, std::vector<EntryType> entries, ValueCallback on_accept) :
+	    AnyBasicMenu(pos), entries(std::move(entries)), on_accept_cb(std::move(on_accept)) {}
 };

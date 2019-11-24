@@ -37,7 +37,7 @@ struct DirectoryFormResult {
 };
 
 KeychainMainScreen::KeychainMainScreen(
-    WindowManager *wmanager, std::unique_ptr<keychain::Keychain> kc) :
+    WindowManager *wmanager, std::shared_ptr<keychain::Keychain> kc) :
     ScreenController(wmanager),
     m_keychain(std::move(kc)) {
 	keychain_root_dir = this->m_keychain->get_root_dir();
@@ -297,8 +297,10 @@ void KeychainMainScreen::post_entry_form() {
 		return true;
 	};
 
-	entry_form_controller->add_field<StringInputHandler>("Entry name: ", on_name_accept);
-	entry_form_controller->add_field<StringInputHandler>("Details: ", on_details_accept);
+	entry_form_controller->add_field<StringInputHandler>(
+	    on_name_accept, Point{2, 2}, "Entry name: ");
+	entry_form_controller->add_field<StringInputHandler>(
+	    on_details_accept, Point{4, 2}, "Details: ");
 
 	state = State::CreatingOrDeleting;
 	wmanager->push_controller(std::move(entry_form_controller));
@@ -351,7 +353,8 @@ void KeychainMainScreen::post_directory_form() {
 	};
 
 	state = State::CreatingOrDeleting;
-	directory_form_controller->add_field<StringInputHandler>("Directory name: ", on_name_accept);
+	directory_form_controller->add_field<StringInputHandler>(
+	    on_name_accept, Point{2, 2}, "Directory name: ");
 
 	wmanager->push_controller(std::move(directory_form_controller));
 }
@@ -393,7 +396,7 @@ void KeychainMainScreen::post_dir_edit(keychain::Directory::ptr dir) {
 	};
 
 	auto name_input =
-	    dir_edit_form->add_field<StringInputHandler>(Point{1, 0}, "Name: ", on_name_change_accept);
+	    dir_edit_form->add_field<StringInputHandler>(on_name_change_accept, Point{1, 0}, "Name: ");
 	name_input->set_value(dir->meta.name);
 
 	state = State::Editing;
@@ -422,7 +425,7 @@ void KeychainMainScreen::post_entry_edit(keychain::Entry::ptr entry) {
 	};
 
 	auto name_input = entry_edit_form->add_field<StringInputHandler>(
-	    Point{1, 0}, "Name: ", on_name_change_accept);
+	    on_name_change_accept, Point{1, 0}, "Name: ");
 	name_input->set_value(entry->meta.name);
 
 	entry_edit_form->add_label(Point{2, 0}, "Secret: ");
@@ -430,7 +433,7 @@ void KeychainMainScreen::post_entry_edit(keychain::Entry::ptr entry) {
 	    Point{2, 8}, utils::sensitive_string("somesecret")));
 
 	auto details_input = entry_edit_form->add_field<StringInputHandler>(
-	    Point{3, 0}, "Details: ", on_details_change_accept);
+	    on_details_change_accept, Point{3, 0}, "Details: ");
 	details_input->set_value(entry->meta.details);
 
 	state = State::Editing;
@@ -470,7 +473,7 @@ void KeychainMainScreen::post_dir_delete(keychain::Directory::ptr dir) {
 	std::string confirmation_query =
 	    "Are you sure you want to delete directory " + dir->meta.name + "? (y/n) [n]: ";
 	confirm_delete_form->add_field<StringInputHandler>(
-	    Point{1, 0}, confirmation_query, on_confirm_delete);
+	    on_confirm_delete, Point{1, 0}, confirmation_query);
 
 	state = State::CreatingOrDeleting;
 	wmanager->push_controller(std::move(confirm_delete_form));
@@ -509,7 +512,7 @@ void KeychainMainScreen::post_entry_delete(keychain::Entry::ptr entry) {
 	std::string confirmation_query =
 	    "Are you sure you want to delete entry " + entry->meta.name + "? (y/n) [n]: ";
 	confirm_delete_form->add_field<StringInputHandler>(
-	    Point{1, 0}, confirmation_query, on_confirm_delete);
+	    on_confirm_delete, Point{1, 0}, confirmation_query);
 
 	state = State::CreatingOrDeleting;
 	wmanager->push_controller(std::move(confirm_delete_form));

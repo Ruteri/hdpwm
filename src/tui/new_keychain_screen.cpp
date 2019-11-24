@@ -123,7 +123,8 @@ void NewKeychainScreen::post_import_form() {
 		return true;
 	};
 
-	form_controller->add_field<SensitiveInputHandler>("Keychain master password: ", on_accept_pw);
+	form_controller->add_field<SensitiveInputHandler>(
+	    on_accept_pw, Point{2, 2}, "Keychain master password: ");
 
 	wmanager->push_controller(form_controller);
 }

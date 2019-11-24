@@ -30,7 +30,6 @@ FormController::FormController(WindowManager *wmanager, ScreenController *parent
 
 void FormController::m_init() {
 	if (parent) parent->init();
-	curs_set(2);
 }
 
 void FormController::m_cleanup() {
@@ -39,6 +38,7 @@ void FormController::m_cleanup() {
 }
 
 void FormController::m_draw() {
+	curs_set(2);
 	wclear(window);
 
 	if (parent) parent->draw();
@@ -77,13 +77,6 @@ void FormController::m_on_key(int key) {
 		}
 
 		switch (key) {
-		case KEY_UP:
-			current_input = current_input <= 0 ? 0 : current_input - 1;
-			break;
-		case KEY_DOWN:
-		case '\t':
-			fields[current_input]->process_key(KEY_ENTER);
-			break;
 		case KEY_ESC:
 			on_cancel();
 			break;
@@ -98,6 +91,8 @@ void FormController::advance_form() {
 	if (++current_input >= fields.size()) {
 		state = State::DONE;
 		on_done();
+	} else {
+		fields[current_input]->set_visible(true);
 	}
 }
 

@@ -21,15 +21,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <curses.h>
 
-void InputHandler::draw() { this->m_draw(stdscr); }
+void InputHandler::draw() {
+	if (is_visible) this->m_draw(stdscr);
+}
 
-void InputHandler::draw(WINDOW *window) { this->m_draw(window); }
+void InputHandler::draw(WINDOW *window) {
+	if (is_visible) this->m_draw(window);
+}
 
-void InputHandler::process_key(int key) {
+void BasicUserInputHandler::process_key(int key) {
 	switch (key) {
 	case KEY_ENTER:
 	case KEY_RETURN:
-		return on_accept();
+		return this->on_accept();
 	case KEY_BACKSPACE:
 		this->on_backspace();
 		break;
@@ -43,7 +47,7 @@ void InputHandler::process_key(int key) {
 
 StringInputHandler::StringInputHandler(
     const Point &origin, const std::string &title, ValueCallback on_accept) :
-    InputHandlerCallback<std::string>(std::move(on_accept)),
+    ValueInputHandler<std::string>(std::move(on_accept)),
     origin(origin), title(title) {}
 
 void StringInputHandler::on_char(char c) { this->value.push_back(c); }
@@ -62,7 +66,7 @@ void StringInputHandler::m_draw(WINDOW *window) {
 
 SensitiveInputHandler::SensitiveInputHandler(
     const Point &origin, const std::string &title, ValueCallback on_accept) :
-    InputHandlerCallback<utils::sensitive_string>(std::move(on_accept)),
+    ValueInputHandler<utils::sensitive_string>(std::move(on_accept)),
     origin(origin), title(title) {}
 
 void SensitiveInputHandler::on_char(char c) { this->value.push_back(c); }

@@ -28,36 +28,43 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <memory>
 
 class InputHandler {
-	virtual void on_accept() = 0;
-
-	virtual void on_char(char c) = 0;
-	virtual void on_backspace() = 0;
+	bool is_visible{true};
 	virtual void m_draw(WINDOW *window) = 0;
 
   public:
-	void draw();
-	void draw(WINDOW *window);
+	virtual void set_visible(bool v) final { is_visible = v; };
+	virtual void draw() final;
+	virtual void draw(WINDOW *window) final;
 
-	virtual void process_key(int key);
+	virtual void process_key(int key) = 0;
 };
 
-template <typename V> class InputHandlerCallback : public InputHandler {
+/* Common non-templated interface for ValueInputHandler */
+class BasicUserInputHandler : public InputHandler {
+	virtual void on_accept() = 0;
+	virtual void on_char(char) = 0;
+	virtual void on_backspace() = 0;
+
+  public:
+	void process_key(int key) final;
+};
+
+template <typename V> class ValueInputHandler : public BasicUserInputHandler {
   public:
 	using ValueCallback = std::function<void(const V &)>;
 	using UValue = V;
 
   protected:
 	V value{};
-
 	ValueCallback on_accept_cb;
 
-	void on_accept() override { on_accept_cb(value); }
+	void on_accept() final { on_accept_cb(value); }
 
   public:
-	InputHandlerCallback(ValueCallback on_accept_cb) : on_accept_cb(on_accept_cb) {}
+	ValueInputHandler(ValueCallback on_accept_cb) : on_accept_cb(on_accept_cb) {}
 };
 
-class StringInputHandler : public InputHandlerCallback<std::string> {
+class StringInputHandler : public ValueInputHandler<std::string> {
 	Point origin;
 	std::string title;
 
@@ -66,14 +73,13 @@ class StringInputHandler : public InputHandlerCallback<std::string> {
 	void m_draw(WINDOW *window) override;
 
   public:
-	using ValueCallback = typename InputHandlerCallback<std::string>::ValueCallback;
 	StringInputHandler(const Point &origin, const std::string &title, ValueCallback on_accept);
 
 	// allows setting displayed value
 	void set_value(const std::string &v) { value = v; }
 };
 
-class SensitiveInputHandler : public InputHandlerCallback<utils::sensitive_string> {
+class SensitiveInputHandler : public ValueInputHandler<utils::sensitive_string> {
 	Point origin;
 	std::string title;
 
@@ -82,6 +88,5 @@ class SensitiveInputHandler : public InputHandlerCallback<utils::sensitive_strin
 	void m_draw(WINDOW *window) override;
 
   public:
-	using ValueCallback = typename InputHandlerCallback<utils::sensitive_string>::ValueCallback;
 	SensitiveInputHandler(const Point &origin, const std::string &title, ValueCallback on_accept);
 };

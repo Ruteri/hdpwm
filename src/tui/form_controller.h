@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/tui/fwd.h>
 #include <src/tui/input.h>
 #include <src/tui/manager.h>
+#include <src/tui/menu.h>
 #include <src/tui/output.h>
 #include <src/tui/screen_controller.h>
 
@@ -62,18 +63,11 @@ class FormController : public ScreenController {
 
 	void add_output(std::unique_ptr<OutputHandler>);
 
-	template <typename InputType>
+	template <typename InputType, typename... Args>
 	InputType *add_field(
-	    std::string title, std::function<bool(const typename InputType::UValue &)> on_accept) {
-		Point origin{2 + (int)(fields.size() + labels.size()) * 3, 5};
-		return add_field<InputType>(origin, title, on_accept);
-	}
-
-	template <typename InputType>
-	InputType *add_field(Point origin, std::string title,
-	    std::function<bool(const typename InputType::UValue &)> on_accept) {
-		InputType *input_handler =
-		    new InputType(origin, title, [this, on_accept](const typename InputType::UValue &v) {
+	    std::function<bool(const typename InputType::UValue &)> on_accept, Args &&... args) {
+		InputType *input_handler = new InputType(
+		    std::forward<Args>(args)..., [this, on_accept](const typename InputType::UValue &v) {
 			    if (on_accept(v))
 				    advance_form();
 			    else {
