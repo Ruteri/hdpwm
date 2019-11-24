@@ -22,8 +22,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/tui/fwd.h>
 #include <src/tui/screen_controller.h>
 
-#include <memory>
 #include <filesystem>
+#include <memory>
 
 class NewKeychainScreen : public ScreenController {
 	WINDOW *window;

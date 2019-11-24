@@ -31,16 +31,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <curses.h>
 
-#include <optional>
 #include <memory>
+#include <optional>
 #include <string>
 
-struct FormResult {
-	std::optional<crypto::PasswordHash> pw_hash{};
-};
-
-OpenKeychainScreen::OpenKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path) :
-    ScreenController(wmanager), window(stdscr), kc_path(kc_path) {}
+OpenKeychainScreen::OpenKeychainScreen(
+    WindowManager *wmanager, const std::filesystem::path &kc_path) :
+    ScreenController(wmanager),
+    window(stdscr), kc_path(kc_path) {}
 
 void OpenKeychainScreen::m_init() {
 	switch (state) {

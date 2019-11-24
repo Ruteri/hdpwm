@@ -156,15 +156,17 @@ void WindowManager::run(std::shared_ptr<ScreenController> initial_screen) {
 			case EVT::EV_PUSH_CONTROLLER:
 				current_controller->cleanup();
 				controller_stack.push(
-					std::move(std::get<std::shared_ptr<ScreenController>>(ev.data)));
+				    std::move(std::get<std::shared_ptr<ScreenController>>(ev.data)));
 				current_controller = controller_stack.top();
 				current_controller->init();
 				break;
 			case EVT::EV_POP_CONTROLLER:
 				current_controller->cleanup();
 				controller_stack.pop();
-				if (!controller_stack.empty()) controller_stack.top()->init();
-				else return m_stop();
+				if (controller_stack.empty()) {
+					return m_stop();
+				}
+				controller_stack.top()->init();
 				break;
 			case EVT::EV_QUIT:
 				return m_stop();

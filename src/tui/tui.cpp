@@ -18,8 +18,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <src/tui/manager.h>
-#include <src/tui/open_keychain_screen.h>
 #include <src/tui/new_keychain_screen.h>
+#include <src/tui/open_keychain_screen.h>
 
 #include <src/keychain/utils.h>
 
@@ -35,14 +35,14 @@ KCConfig process_cmd_line(int argc, const char *argv[]) {
 	argparse::ArgumentParser program("hdpwm");
 
 	program.add_argument("-p", "--path")
-	  .help("path to keychain data directory")
-	  .default_value(std::string{"~/.hdpwm"});
+	    .help("path to keychain data directory")
+	    .default_value(std::string{"~/.hdpwm"});
 
 	try {
 		program.parse_args(argc, argv);
 
 	} catch (const std::runtime_error &err) {
-        if (err.what() == std::string_view{"help called"}) {
+		if (err.what() == std::string_view{"help called"}) {
 			std::cout << program;
 			exit(0);
 		} else {
@@ -53,12 +53,12 @@ KCConfig process_cmd_line(int argc, const char *argv[]) {
 	}
 
 	std::string user_provided_path = program.get<std::string>("--path");
-	return { keychain::expand_path(user_provided_path) };
+	return {keychain::expand_path(user_provided_path)};
 }
 
 int main(int argc, const char *argv[]) {
 
-	auto config  = process_cmd_line(argc, argv);
+	auto config = process_cmd_line(argc, argv);
 
 	WindowManager wm;
 	if (keychain::can_import_db_from_path(config.kc_path)) {
@@ -68,7 +68,8 @@ int main(int argc, const char *argv[]) {
 		// CreateOrImportScreen
 		wm.run(std::make_shared<NewKeychainScreen>(&wm, config.kc_path));
 	} else {
-		std::cout << "Path " << config.kc_path << " cannot be imported nor is it empty, refusing to continue" << std::endl;
+		std::cout << "Path " << config.kc_path
+		          << " cannot be imported nor is it empty, refusing to continue" << std::endl;
 		exit(1);
 	}
 

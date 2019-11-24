@@ -84,8 +84,10 @@ class GenerateKeychainScreen : public ScreenController {
 	}
 };
 
-NewKeychainScreen::NewKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path):
-    ScreenController(wmanager), window(stdscr), kc_path(kc_path) {}
+NewKeychainScreen::NewKeychainScreen(
+    WindowManager *wmanager, const std::filesystem::path &kc_path) :
+    ScreenController(wmanager),
+    window(stdscr), kc_path(kc_path) {}
 
 void NewKeychainScreen::m_init() {
 	if (!form_posted) {
