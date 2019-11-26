@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/tui/open_keychain_screen.h>
 
 #include <src/tui/error_screen.h>
+#include <src/tui/export_keychain_screen.h>
 #include <src/tui/form_controller.h>
 #include <src/tui/input.h>
 #include <src/tui/keychain_main_screen.h>
@@ -31,6 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <curses.h>
 
+#include <cassert>
 #include <memory>
 #include <optional>
 #include <string>
@@ -40,28 +42,6 @@ OpenKeychainScreen::OpenKeychainScreen(
     ScreenController(wmanager),
     window(stdscr), kc_path(kc_path) {}
 
-void OpenKeychainScreen::m_init() {
-	switch (state) {
-	case State::Init:
-		if (!this->kc) {
-			post_pass_form();
-			state = State::Pass;
-		} else {
-			post_action_form();
-			state = State::Action;
-		}
-		break;
-	case State::Pass:
-		break;
-	case State::AwaitPassCleanup:
-		post_action_form();
-		state = State::Action;
-		break;
-	case State::Action:
-		break;
-	}
-}
-
 void OpenKeychainScreen::post_pass_form() {
 	using FormResult = std::optional<crypto::PasswordHash>;
 	std::shared_ptr<FormResult> result = std::make_shared<FormResult>();
@@ -69,68 +49,71 @@ void OpenKeychainScreen::post_pass_form() {
 	auto on_form_done = [this, result]() {
 		try {
 			this->kc = keychain::Keychain::open(this->kc_path, result->value());
-			this->state = State::AwaitPassCleanup;
-			this->wmanager->pop_controller();
+			post_action_form();
 		} catch (const std::exception &e) {
-			this->state = State::Init;
 			this->wmanager->set_controller(
 			    std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
 		}
 	};
 
 	auto on_form_cancel = [this]() {
-		this->state = State::Init;
 		this->wmanager->pop_controller();
 	};
 
-	auto form_controller =
-	    std::make_shared<FormController>(wmanager, this, window, on_form_done, on_form_cancel);
+	m_form.reset(new FormController(wmanager, nullptr, window, on_form_done, on_form_cancel));
+
+	std::string title = std::string("Opening keychain ") + kc_path.string();
+	m_form->add_label(Point{0, 0}, title);
 
 	auto on_accept_pw = [result](const utils::sensitive_string &pw) -> bool {
 		*result = crypto::hash_password(pw);
 		return true;
 	};
 
-	form_controller->add_field<SensitiveInputHandler>(
+	m_form->add_field<SensitiveInputHandler>(
 	    on_accept_pw, Point{2, 2}, "Keychain master password: ");
-
-	wmanager->push_controller(form_controller);
 }
 
 void OpenKeychainScreen::post_action_form() {
 	struct ActionMenuEntry {
 		std::string title;
-		enum Action { Open, Exit } action;
+		enum Action { Open, Export, Exit } action;
 	};
 
 	std::shared_ptr<ActionMenuEntry::Action> result =
 	    std::make_shared<ActionMenuEntry::Action>(ActionMenuEntry::Action::Open);
 
 	auto on_form_done = [this, result]() {
-		this->state = State::Init;
 		try {
 			switch (*result) {
 			case ActionMenuEntry::Action::Open:
-				this->wmanager->set_controller(/* set over form controller */
+				this->wmanager->push_controller(
 				    std::make_shared<KeychainMainScreen>(this->wmanager, this->kc));
+				break;
+			case ActionMenuEntry::Action::Export:
+				this->wmanager->push_controller(
+				    std::make_shared<ExportKeychainScreen>(this->wmanager, this->kc));
 				break;
 			case ActionMenuEntry::Action::Exit:
 				this->wmanager->stop();
 				break;
 			}
 		} catch (const std::exception &e) {
-			this->wmanager->set_controller(
+			this->wmanager->push_controller(
 			    std::make_shared<ErrorScreen>(this->wmanager, Point{2, 5}, e.what()));
 		}
+
+		m_form.reset();
 	};
 
 	auto on_form_cancel = [this]() {
-		this->state = State::Init;
 		this->wmanager->pop_controller();
 	};
 
-	auto form_controller =
-	    std::make_shared<FormController>(wmanager, this, window, on_form_done, on_form_cancel);
+	m_form.reset(new FormController(wmanager, nullptr, window, on_form_done, on_form_cancel));
+
+	std::string title = std::string("Opening keychain ") + kc_path.string();
+	m_form->add_label(Point{0, 0}, title);
 
 	auto on_accept_menu = [result](const ActionMenuEntry &entry) -> bool {
 		*result = entry.action;
@@ -139,19 +122,34 @@ void OpenKeychainScreen::post_action_form() {
 
 	std::vector<ActionMenuEntry> menu_entries{
 	    {std::string{"Open keychain"}, ActionMenuEntry::Action::Open},
+	    {std::string{"Export keychain"}, ActionMenuEntry::Action::Export},
 	    {std::string{"Exit"}, ActionMenuEntry::Action::Exit},
 	};
-	form_controller->add_field<TokenizedMenu<ActionMenuEntry>>(
-	    on_accept_menu, Point{2, 2}, std::move(menu_entries));
 
-	wmanager->push_controller(form_controller);
+	m_form->add_field<TokenizedMenu<ActionMenuEntry>>(
+	    on_accept_menu, Point{2, 2}, std::move(menu_entries));
+}
+
+void OpenKeychainScreen::m_init() {
+	if (!m_form) {
+		if (kc /* and master seed decrypted */) {
+			post_action_form();
+		} else {
+			post_pass_form();
+		}
+	}
+
+	if (m_form) m_form->init();
+}
+
+void OpenKeychainScreen::m_cleanup() {
+	if (m_form) m_form->cleanup();
 }
 
 void OpenKeychainScreen::m_draw() {
-	wclear(window);
-
-	mvaddstr(0, 0, "Opening keychain ");
-	waddstr(window, kc_path.c_str());
+	if (m_form) m_form->draw();
 }
 
-void OpenKeychainScreen::m_on_key(int) { wmanager->pop_controller(); }
+void OpenKeychainScreen::m_on_key(int k) {
+	if (m_form) m_form->on_key(k);
+}

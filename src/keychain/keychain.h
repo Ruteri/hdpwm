@@ -21,6 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <src/keychain/db.h>
 #include <src/keychain/keychain_entry.h>
+#include <src/keychain/utils.h>
 
 #include <src/crypto/structs.h>
 #include <src/crypto/timed_encryption_key.h>
@@ -50,6 +51,8 @@ class Keychain {
 	    std::filesystem::path path, crypto::Seed &&seed, crypto::PasswordHash &&pw_hash);
 	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash pw_hash);
 
+	void export_to_uri(const UriLocator &uri) const;
+
 	std::string get_data_dir_path() const { return data_path.string(); }
 	Directory::ptr get_root_dir() const;
 
@@ -59,6 +62,7 @@ class Keychain {
 
 	static utils::sensitive_string encode_secret(
 	    unsigned char *in_data, size_t in_size, size_t out_size);
+	crypto::Seed derive_child(const crypto::DerivationPath &dpath) const;
 	utils::sensitive_string derive_secret(const crypto::DerivationPath &dpath);
 };
 

@@ -1,4 +1,4 @@
-#[[
+/*
 
 Copyright (C) 2019 Mateusz Morusiewicz
 
@@ -15,16 +15,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-]]
-set(CURSES_NEED_NCURSES TRUE)
+*/
 
-# The packaged ncurses in macosx homebrew are already containing wide-char support
-if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    set(CURSES_NEED_WIDE TRUE)
-endif()
+#pragma once
 
-find_package(Curses REQUIRED)
-include_directories(${CURSES_INCLUDE_DIR})
+#include <src/tui/form_controller.h>
+#include <src/tui/fwd.h>
+#include <src/tui/screen_controller.h>
 
-add_library(tui form_controller.cpp color.cpp output.cpp menu.cpp input.cpp manager.cpp open_keychain_screen.cpp new_keychain_screen.cpp export_keychain_screen.cpp keychain_main_screen.cpp error_screen.cpp help_screen.cpp)
-target_link_libraries(tui PUBLIC ${CURSES_LIBRARIES} keychain)
+#include <src/keychain/keychain.h>
+
+class ExportKeychainScreen : public ScreenController {
+	WINDOW *window;
+	std::unique_ptr<FormController> export_fc;
+
+	std::shared_ptr<keychain::Keychain> kc;
+
+	void post_export_form();
+
+	void m_init() override;
+	void m_draw() override;
+	void m_on_key(int key) override;
+
+  public:
+	ExportKeychainScreen(WindowManager *wmanager, std::shared_ptr<keychain::Keychain> kc);
+};

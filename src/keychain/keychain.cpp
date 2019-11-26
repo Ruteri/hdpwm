@@ -29,6 +29,9 @@ using json = nlohmann::json;
 #include <list>
 #include <stdexcept>
 
+#include <fstream>
+#include <iostream>
+
 namespace keychain {
 
 constexpr char DB_KEY_SEED[] = "seed";
@@ -110,6 +113,28 @@ std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::Pas
 	return kc;
 }
 
+void Keychain::export_to_uri(const UriLocator &uri) const {
+	std::string db_entries;
+	if (auto s = db->Get(leveldb::ReadOptions(), DB_KEY_ENTRIES, &db_entries); !s.ok()) {
+		throw std::runtime_error("could not get entries from db");
+	}
+
+	crypto::DerivationPath standard_encryption_path = {
+	    255}; // TODO: should be predefined and reserved m/0/0
+	crypto::Seed standard_encryption_seed = derive_child(standard_encryption_path);
+	crypto::EncryptionKey key(standard_encryption_seed);
+	auto encrypted_entries = crypto::encrypt(key, db_entries);
+	if (auto path = std::get_if<std::filesystem::path>(&uri)) {
+		std::ofstream export_file;
+		export_file.open(*path, std::ios::out);
+		std::ostream_iterator<uint8_t> output_iterator(export_file, "");
+		std::copy(encrypted_entries.begin(), encrypted_entries.end(), output_iterator);
+		export_file.close();
+	} else {
+		throw std::runtime_error("unexpected uri type");
+	}
+}
+
 Directory::ptr Keychain::get_root_dir() const {
 	std::string db_entries;
 	if (auto s = db->Get(leveldb::ReadOptions(), DB_KEY_ENTRIES, &db_entries); !s.ok()) {
@@ -165,7 +190,7 @@ utils::sensitive_string Keychain::encode_secret(
 	return secret;
 }
 
-utils::sensitive_string Keychain::derive_secret(const crypto::DerivationPath &dpath) {
+crypto::Seed Keychain::derive_child(const crypto::DerivationPath &dpath) const {
 	std::string seed_str{};
 	seed_str.reserve(crypto::Seed::Size + 1); // reserve to avoid leaving seed in memory
 	if (auto s = db->Get(leveldb::ReadOptions(), DB_KEY_SEED, &seed_str); !s.ok()) {
@@ -178,6 +203,11 @@ utils::sensitive_string Keychain::derive_secret(const crypto::DerivationPath &dp
 	crypto::Seed derived_seed =
 	    crypto::derive_child(this->tec.getPasswordHash(), encrypted_seed, dpath);
 
+	return derived_seed;
+}
+
+utils::sensitive_string Keychain::derive_secret(const crypto::DerivationPath &dpath) {
+	crypto::Seed derived_seed = derive_child(dpath);
 	return Keychain::encode_secret(derived_seed.data(), derived_seed.size(), 10);
 }
 

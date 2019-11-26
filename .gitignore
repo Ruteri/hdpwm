@@ -6,6 +6,7 @@ compile_commands.json
 *.a
 *.o
 *.cbp
+.*.swp
 src/hdpmanager
 tests/unittests
 

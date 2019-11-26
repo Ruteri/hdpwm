@@ -27,6 +27,9 @@ struct DerivationPath {
 	int seed;
 };
 
+Ciphertext encrypt(const EncryptionKey &key, const std::string &to_encrypt);
+std::string decrypt(const EncryptionKey &key, const Ciphertext &to_decrypt);
+
 EncryptedSeed encrypt_seed(const Seed &seed, const PasswordHash &password_hash);
 Seed decrypt_seed(const EncryptedSeed &encrypted_seed, const PasswordHash &password_hash);
 PasswordHash hash_password(const utils::sensitive_string &password);

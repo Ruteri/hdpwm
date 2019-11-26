@@ -42,7 +42,7 @@ class TimedEncryptionKey {
 	explicit TimedEncryptionKey(crypto::PasswordHash pw) : valid(true), ec(std::move(pw)) {}
 
 	// TODO: should lock
-	const PasswordHash &getPasswordHash() { return ec; }
+	const PasswordHash &getPasswordHash() const { return ec; }
 
 	bool is_valid() const { return this->valid; }
 

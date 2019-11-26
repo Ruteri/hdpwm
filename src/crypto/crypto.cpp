@@ -37,6 +37,37 @@ PasswordHash hash_password(const utils::sensitive_string &password) {
 	return pw_hash;
 }
 
+Ciphertext encrypt(const EncryptionKey &key, const std::string &to_encrypt) {
+	Ciphertext ciphertext_block(to_encrypt.size());
+
+	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
+	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
+
+	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(
+	    reinterpret_cast<const CryptoPP::byte *>(key.data()), EncryptionKey::Size, iv);
+	cfbEncryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(ciphertext_block.data()),
+	    reinterpret_cast<const CryptoPP::byte *>(to_encrypt.c_str()), to_encrypt.size());
+
+	return ciphertext_block;
+}
+
+std::string decrypt(const EncryptionKey &key, const Ciphertext &to_decrypt) {
+	char *plaintext_block = new char[to_decrypt.size() + 1];
+
+	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
+	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
+
+	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(
+	    reinterpret_cast<const CryptoPP::byte *>(key.data()), EncryptionKey::Size, iv);
+	cfbDecryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(plaintext_block),
+	    reinterpret_cast<const CryptoPP::byte *>(to_decrypt.data()), to_decrypt.size());
+
+	plaintext_block[to_decrypt.size()] = '\0';
+	std::string plaintext = std::string(plaintext_block);
+	delete[] plaintext_block;
+	return plaintext;
+}
+
 EncryptedSeed encrypt_seed(const Seed &seed, const PasswordHash &password_hash) {
 	EncryptedSeed encrypted_seed;
 

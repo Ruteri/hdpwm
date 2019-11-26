@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <src/tui/form_controller.h>
 #include <src/tui/fwd.h>
 #include <src/tui/screen_controller.h>
 
@@ -33,10 +34,12 @@ class OpenKeychainScreen : public ScreenController {
 	std::shared_ptr<keychain::Keychain> kc;
 
 	enum class State { Init, Pass, AwaitPassCleanup, Action } state = State::Init;
+	std::unique_ptr<FormController> m_form;
 	void post_pass_form();
 	void post_action_form();
 
 	void m_init() override;
+	void m_cleanup() override;
 	void m_draw() override;
 	void m_on_key(int key) override;
 

@@ -26,14 +26,42 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using crypto::serialize;
 using crypto::deserialize;
 
+using crypto::encrypt;
+using crypto::decrypt;
+
 using crypto::Seed;
+using crypto::Ciphertext;
 using crypto::EncryptedSeed;
+using crypto::EncryptionKey;
 using crypto::PasswordHash;
+
+#include <iostream>
 
 TEST_CASE( "hashes are serialized and deserialized properly", "[hash_serialization]" ) {
 	auto expected_password_hash = deserialize<PasswordHash>("99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f");
 
 	REQUIRE( serialize<PasswordHash>(expected_password_hash) == "99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f" );
+}
+
+TEST_CASE( "string encryption and decryption works as intended", "[crypto_encrypt_decrypt_string]" ) {
+	struct ec_case {
+		std::string key;
+		std::string plaintext;
+		Ciphertext ciphertext;
+	};
+
+	std::vector<ec_case> cases = {
+		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", "00", {129, 167}},
+		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", R"({"some_key": "some json string"})", deserialize<Ciphertext>("cab5b04aa082b85c7b56040b35c2cb882e260401890f5d8cd56a1254b8d4f7be")},
+	};
+
+	int i = 0;
+	for (auto &tc : cases) {
+		INFO( "Case " << i++ );
+		auto key = deserialize<EncryptionKey>(tc.key);
+		REQUIRE( encrypt(key, tc.plaintext) == tc.ciphertext );
+		REQUIRE( decrypt(key, tc.ciphertext) == tc.plaintext );
+	}
 }
 
 TEST_CASE( "seeds are encrypted properly", "[encrypt_seed]" ) {

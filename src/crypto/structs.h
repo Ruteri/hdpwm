@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <charconv>
 #include <cstdint>
 #include <stdexcept>
+#include <vector>
 
 namespace crypto {
 
@@ -53,8 +54,8 @@ template <int S, typename CV> struct ByteArray {
 
 	bool operator==(const ByteArray &other) const { return this->_data == other._data; }
 
-	decltype(auto) begin() { return this->_data.begin(); }
-	decltype(auto) end() { return this->_data.end(); }
+	decltype(auto) begin() const { return this->_data.begin(); }
+	decltype(auto) end() const { return this->_data.end(); }
 
 	decltype(auto) data() { return this->_data.data(); }
 	decltype(auto) data() const { return this->_data.data(); }
@@ -69,6 +70,13 @@ struct ChildDerivationData : ByteArray<296, ChildDerivationData> {};
 
 struct Seed : ByteArray<512, Seed> {};
 struct EncryptedSeed : ByteArray<512, EncryptedSeed> {};
+
+struct EncryptionKey : ByteArray<256, EncryptionKey> {
+	EncryptionKey() = default;
+	EncryptionKey(const Seed &seed) { std::copy(seed.begin() + 32, seed.end(), _data.begin()); }
+};
+
+using Ciphertext = std::vector<unsigned char>;
 
 template <typename AR> std::string serialize(const AR &data);
 

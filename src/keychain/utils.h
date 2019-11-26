@@ -22,13 +22,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <src/utils/utils.h>
 
 #include <filesystem>
+#include <variant>
 
 namespace keychain {
 
+template <typename T = bool> using Result = utils::Result<T>;
+using Uri = std::string;
+
 std::filesystem::path expand_path(const std::string &path);
 
-// Or: Result<enum DBState { can_import, can_create, invalid }>
-utils::Result can_import_db_from_path(const std::filesystem::path &path);
-utils::Result can_create_db_at_path(const std::filesystem::path &path);
+// Or: Result<enum DBPath { can_import, can_create, invalid }>
+Result<void> can_import_db_from_path(const std::filesystem::path &path);
+Result<void> can_create_db_at_path(const std::filesystem::path &path);
+
+using UriLocator = std::variant<std::filesystem::path>;
+Result<UriLocator> parse_uri(const Uri &uri);
 
 } // namespace keychain

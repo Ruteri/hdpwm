@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -28,14 +29,29 @@ std::vector<std::string> split_string(std::string str);
 
 void print_bytes(void *buffer, int size);
 
-struct Result {
-	bool valid;
-	std::string_view reason;
+template <typename T = void> struct Result {
+	std::optional<T> _value;
+	std::string_view _reason;
+
+	explicit operator bool() const { return static_cast<bool>(_value); }
+
+	T value() const { return _value.value(); }
+	auto what() { return _reason; }
+
+	static Result Ok(T &&t) { return Result<T>{std::forward<T>(t), ""}; }
+	static Result Err(std::string_view reason) { return Result{{}, reason}; }
+};
+
+template <> struct Result<void> {
+	bool _value;
+	std::string_view _reason;
+
+	explicit operator bool() const { return _value; }
+
+	auto what() { return _reason; }
 
 	static Result Ok() { return Result{true, ""}; }
 	static Result Err(std::string_view reason) { return Result{false, reason}; }
-
-	explicit operator bool() const { return valid; }
 };
 
 } // namespace utils
