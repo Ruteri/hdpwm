@@ -33,22 +33,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ExportKeychainScreen::ExportKeychainScreen(
     WindowManager *wmanager, std::shared_ptr<keychain::Keychain> kc) :
-    ScreenController(wmanager),
-    window(stdscr), kc(kc) {
-	post_export_form();
-}
+    FormController(wmanager) {
 
-struct ExportFormResult {
-	/* fs path (TODO: or url) */
-	keychain::UriLocator uri_locator;
-};
+	struct ExportFormResult {
+		/* fs path (TODO: or url) */
+		std::shared_ptr<keychain::Keychain> kc;
+		keychain::UriLocator uri_locator;
+	};
 
-void ExportKeychainScreen::post_export_form() {
 	std::shared_ptr<ExportFormResult> result = std::make_shared<ExportFormResult>();
+	result->kc = std::move(kc);
 
-	auto on_form_done = [this, result]() {
+	FormController::on_done = [this, result]() {
 		try {
-			this->kc->export_to_uri(result->uri_locator);
+			result->kc->export_to_uri(result->uri_locator);
 			this->wmanager->pop_controller();
 		} catch (const std::exception &e) {
 			this->wmanager->set_controller(
@@ -56,28 +54,21 @@ void ExportKeychainScreen::post_export_form() {
 		}
 	};
 
-	auto on_form_cancel = [this]() { this->wmanager->pop_controller(); };
-
-	export_fc.reset(new FormController(wmanager, nullptr, window, on_form_done, on_form_cancel));
+	FormController::on_cancel = [this]() { this->wmanager->pop_controller(); };
 
 	auto on_accept_dest = [result](const std::string &path) -> bool {
-		auto locator = keychain::parse_uri(path);
-		if (locator) {
+		if (auto locator = keychain::parse_uri(path);
+		    locator && keychain::can_export_to_uri(locator.value())) {
 			result->uri_locator = locator.value();
 			return true;
 		}
 		return false;
 	};
 
-	std::string title = std::string("Exporting keychain ") + kc->get_data_dir_path();
-	export_fc->add_label(Point{0, 0}, title);
+	std::string title = std::string("Exporting keychain ") + result->kc->get_data_dir_path();
+	FormController::add_label(Point{0, 0}, title);
 
-	export_fc->add_field<StringInputHandler>(on_accept_dest, Point{2, 2}, "Destination (uri): ")
+	FormController::add_field<StringInputHandler>(
+	    on_accept_dest, Point{2, 2}, "Destination (uri): ")
 	    ->set_value("file://");
 }
-
-void ExportKeychainScreen::m_init() { export_fc->init(); }
-
-void ExportKeychainScreen::m_draw() { export_fc->draw(); }
-
-void ExportKeychainScreen::m_on_key(int k) { export_fc->on_key(k); }

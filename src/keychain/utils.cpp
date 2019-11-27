@@ -50,15 +50,36 @@ Result<void> can_import_db_from_path(const std::filesystem::path &path) {
 Result<UriLocator> parse_uri(const Uri &uri) {
 	if (uri.find("file://") == 0) {
 		auto path = std::filesystem::path(expand_path(uri.substr(7)));
-		if (std::filesystem::exists(path)) {
-			return Result<UriLocator>::Err("This file already exists, refusing to delete it.");
-		} else if (!std::filesystem::is_directory(path.parent_path())) {
-			return Result<UriLocator>::Err("The parent directory does not exist, create it first.");
-		}
 		return Result<UriLocator>::Ok(path);
-	} else {
-		return Result<UriLocator>::Err("Invalid uri");
 	}
+
+	return Result<UriLocator>::Err("Invalid uri");
+}
+
+Result<void> can_import_from_uri(const UriLocator &uri) {
+	if (auto path = std::get_if<std::filesystem::path>(&uri)) {
+		if (!std::filesystem::exists(*path)) {
+			return Result<void>::Err("File doesn't exists.");
+		} else if (!std::filesystem::is_regular_file(*path)) {
+			return Result<void>::Err("Path does not point to a file.");
+		}
+		return Result<void>::Ok();
+	}
+
+	return Result<void>::Err("Invalid uri");
+}
+
+Result<void> can_export_to_uri(const UriLocator &uri) {
+	if (auto path = std::get_if<std::filesystem::path>(&uri)) {
+		if (std::filesystem::exists(*path)) {
+			return Result<void>::Err("This file already exists, refusing to delete it.");
+		} else if (!std::filesystem::is_directory(path->parent_path())) {
+			return Result<void>::Err("The parent directory does not exist, create it first.");
+		}
+		return Result<void>::Ok();
+	}
+
+	return Result<void>::Err("Invalid uri");
 }
 
 } // namespace keychain

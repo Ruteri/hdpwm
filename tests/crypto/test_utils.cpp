@@ -190,3 +190,9 @@ TEST_CASE( "push and pop work", "[sensitive_string_push_pop_back]" ) {
 	REQUIRE( str.max_size == 4 );
 	REQUIRE( str.data[2] == '\0' );
 }
+
+TEST_CASE( "operator[] works as intended", "[sensitive_string_operator_sqb]" ) {
+	sensitive_string str;
+	str.push_back('x');
+	REQUIRE( str[0] == 'x' );
+}

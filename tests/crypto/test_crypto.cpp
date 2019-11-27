@@ -26,6 +26,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 using crypto::serialize;
 using crypto::deserialize;
 
+using crypto::B64EncodedText;
+using crypto::base64_encode;
+using crypto::base64_decode;
+using crypto::as_string;
+using crypto::as_encoded;
+
 using crypto::encrypt;
 using crypto::decrypt;
 
@@ -35,24 +41,63 @@ using crypto::EncryptedSeed;
 using crypto::EncryptionKey;
 using crypto::PasswordHash;
 
-#include <iostream>
-
 TEST_CASE( "hashes are serialized and deserialized properly", "[hash_serialization]" ) {
 	auto expected_password_hash = deserialize<PasswordHash>("99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f");
 
 	REQUIRE( serialize<PasswordHash>(expected_password_hash) == "99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f" );
 }
 
+TEST_CASE( "recoding as string and as vector works as intended", "[crypto_b64_recoding]" ) {
+	struct tc_case {
+		std::string decoded;
+		B64EncodedText encoded;
+	};
+
+	std::vector<tc_case> cases = {
+		{ "", {} },
+		{ "sometext", {'s', 'o', 'm', 'e', 't', 'e', 'x', 't'} },
+		{ "someothertext", {'s', 'o', 'm', 'e', 'o', 't', 'h', 'e', 'r', 't', 'e', 'x', 't'} },
+	};
+
+	for (auto &tc : cases) {
+		REQUIRE( as_encoded(tc.decoded) == tc.encoded );
+		REQUIRE( as_string(tc.encoded) == tc.decoded );
+	}
+}
+
+TEST_CASE( "base64 encoding and decoding works as intended", "[base64_coding]" ) {
+	struct tc_case {
+		std::string decoded;
+		B64EncodedText encoded;
+	};
+
+	std::vector<tc_case> cases = {
+		{ "", {} },
+		{ "sometext", as_encoded("c29tZXRleHQ=") },
+		{ "someothertext", as_encoded("c29tZW90aGVydGV4dA==") },
+		{ "someothertextp", as_encoded("c29tZW90aGVydGV4dHA=") },
+		{ "someothertextpp", as_encoded("c29tZW90aGVydGV4dHBw") },
+		{ "someothertextppp", as_encoded("c29tZW90aGVydGV4dHBwcA==") },
+		{ "someothertextpppp", as_encoded("c29tZW90aGVydGV4dHBwcHA=") },
+	};
+
+	for (auto &tc : cases) {
+		REQUIRE( base64_encode(tc.decoded) == tc.encoded );
+		REQUIRE( base64_decode(tc.encoded) == tc.decoded );
+	}
+}
+
 TEST_CASE( "string encryption and decryption works as intended", "[crypto_encrypt_decrypt_string]" ) {
 	struct ec_case {
 		std::string key;
-		std::string plaintext;
+		B64EncodedText plaintext;
 		Ciphertext ciphertext;
 	};
 
 	std::vector<ec_case> cases = {
-		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", "00", {129, 167}},
-		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", R"({"some_key": "some json string"})", deserialize<Ciphertext>("cab5b04aa082b85c7b56040b35c2cb882e260401890f5d8cd56a1254b8d4f7be")},
+		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", crypto::base64_encode(""), {}},
+		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", { 0, 0 }, {177, 151}},
+		{"99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f", crypto::base64_encode(R"({"some_key": "some json string"})"), deserialize<Ciphertext>("d4ee895fafd5d65b461d525d70b3f1d12b34964e3241cc9a5edeed792bf95c82562522ffdaf7f26ab99160b9")},
 	};
 
 	int i = 0;

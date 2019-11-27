@@ -27,8 +27,17 @@ struct DerivationPath {
 	int seed;
 };
 
-Ciphertext encrypt(const EncryptionKey &key, const std::string &to_encrypt);
-std::string decrypt(const EncryptionKey &key, const Ciphertext &to_decrypt);
+using B64EncodedText = std::vector<uint8_t>;
+B64EncodedText as_encoded(const std::string &encoded_text);
+Ciphertext as_ciphertext(const std::string &encoded_text);
+std::string as_string(const B64EncodedText &encoded_text);
+
+B64EncodedText base64_encode(const std::string &to_encode);
+B64EncodedText base64_encode(const Ciphertext &to_encode);
+std::string base64_decode(const B64EncodedText &to_decode);
+
+Ciphertext encrypt(const EncryptionKey &key, const B64EncodedText &to_encrypt);
+B64EncodedText decrypt(const EncryptionKey &key, const Ciphertext &to_decrypt);
 
 EncryptedSeed encrypt_seed(const Seed &seed, const PasswordHash &password_hash);
 Seed decrypt_seed(const EncryptedSeed &encrypted_seed, const PasswordHash &password_hash);

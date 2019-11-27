@@ -20,23 +20,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
 #include <src/tui/form_controller.h>
-#include <src/tui/fwd.h>
-#include <src/tui/screen_controller.h>
 
 #include <src/keychain/keychain.h>
 
-class ExportKeychainScreen : public ScreenController {
-	WINDOW *window;
-	std::unique_ptr<FormController> export_fc;
-
-	std::shared_ptr<keychain::Keychain> kc;
-
-	void post_export_form();
-
-	void m_init() override;
-	void m_draw() override;
-	void m_on_key(int key) override;
-
+class ExportKeychainScreen : public FormController {
   public:
 	ExportKeychainScreen(WindowManager *wmanager, std::shared_ptr<keychain::Keychain> kc);
 };

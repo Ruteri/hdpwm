@@ -17,8 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 */
 
+#include <src/tui/create_keychain_screen.h>
 #include <src/tui/manager.h>
-#include <src/tui/new_keychain_screen.h>
 #include <src/tui/open_keychain_screen.h>
 
 #include <src/keychain/utils.h>
@@ -66,7 +66,7 @@ int main(int argc, const char *argv[]) {
 		wm.run(std::make_shared<OpenKeychainScreen>(&wm, config.kc_path));
 	} else if (keychain::can_create_db_at_path(config.kc_path)) {
 		// CreateOrImportScreen
-		wm.run(std::make_shared<NewKeychainScreen>(&wm, config.kc_path));
+		wm.run(std::make_shared<CreateKeychainScreen>(&wm, config.kc_path));
 	} else {
 		std::cout << "Path " << config.kc_path
 		          << " cannot be imported nor is it empty, refusing to continue" << std::endl;

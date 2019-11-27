@@ -31,6 +31,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace keychain {
 
 class Keychain {
+	// TODO: should be predefined and reserved m/0/0
+	static constexpr crypto::DerivationPath standard_export_dpath{255};
+
   protected:
 	std::filesystem::path data_path;
 
@@ -48,9 +51,10 @@ class Keychain {
 	Keychain &operator=(Keychain &&other);
 
 	static std::unique_ptr<Keychain> initialize_with_seed(
-	    std::filesystem::path path, crypto::Seed &&seed, crypto::PasswordHash &&pw_hash);
+	    std::filesystem::path path, crypto::Seed seed, crypto::PasswordHash pw_hash);
 	static std::unique_ptr<Keychain> open(std::filesystem::path path, crypto::PasswordHash pw_hash);
 
+	void import_from_uri(const UriLocator &uri);
 	void export_to_uri(const UriLocator &uri) const;
 
 	std::string get_data_dir_path() const { return data_path.string(); }

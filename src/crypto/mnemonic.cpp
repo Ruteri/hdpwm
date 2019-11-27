@@ -134,4 +134,21 @@ Seed mnemonic_to_seed(const std::vector<utils::sensitive_string> &words) {
 	return seed;
 }
 
+std::vector<utils::sensitive_string> split_mnemonic_words(const utils::sensitive_string &mnemonic) {
+	std::vector<utils::sensitive_string> ret;
+	ret.reserve(25); // enough for longest allowed mnemonic
+	utils::sensitive_string c_word(12);
+	for (size_t i = 0; i < mnemonic.size(); ++i) {
+		if (mnemonic[i] == ' ') {
+			ret.push_back(std::move(c_word));
+			c_word = utils::sensitive_string(12);
+		} else {
+			c_word.push_back(mnemonic[i]);
+		}
+	}
+
+	ret.push_back(std::move(c_word));
+	return ret;
+}
+
 } // namespace crypto

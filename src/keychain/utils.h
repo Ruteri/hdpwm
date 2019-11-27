@@ -38,4 +38,7 @@ Result<void> can_create_db_at_path(const std::filesystem::path &path);
 using UriLocator = std::variant<std::filesystem::path>;
 Result<UriLocator> parse_uri(const Uri &uri);
 
+Result<void> can_import_from_uri(const UriLocator &uri);
+Result<void> can_export_to_uri(const UriLocator &uri);
+
 } // namespace keychain

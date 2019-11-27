@@ -31,11 +31,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <vector>
 
 class FormController : public ScreenController {
+  protected:
 	ScreenController *parent;
 	WINDOW *&window;
 	std::function<void()> on_done;
 	std::function<void()> on_cancel;
 
+  private:
 	enum class State { PROCESSING, IGNORING, DONE } state = State::PROCESSING;
 
 	std::vector<std::unique_ptr<OutputHandler>> labels = {};
@@ -55,6 +57,7 @@ class FormController : public ScreenController {
 	void advance_form();
 
   public:
+	FormController(WindowManager *wmanager);
 	FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
 	    std::function<void()> on_done, std::function<void()> on_cancel);
 

@@ -60,7 +60,7 @@ std::string get_default_db_layout() {
 }
 
 std::unique_ptr<Keychain> Keychain::initialize_with_seed(
-    std::filesystem::path path, crypto::Seed &&seed, crypto::PasswordHash &&pw_hash) {
+    std::filesystem::path path, crypto::Seed seed, crypto::PasswordHash pw_hash) {
 	std::unique_ptr<Keychain> kc = std::make_unique<Keychain>();
 	kc->data_path = std::move(path);
 	kc->tec = crypto::TimedEncryptionKey(std::move(pw_hash));
@@ -113,25 +113,53 @@ std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::Pas
 	return kc;
 }
 
+void Keychain::import_from_uri(const UriLocator &uri) {
+	std::optional<std::vector<uint8_t>> encoded_encrypted_entries{};
+
+	if (auto import_path = std::get_if<std::filesystem::path>(&uri)) {
+		std::ifstream import_file;
+		import_file.open(*import_path, std::ios::in);
+		std::istream_iterator<uint8_t> input_iterator(import_file);
+
+		encoded_encrypted_entries =
+		    std::vector<uint8_t>(input_iterator, std::istream_iterator<uint8_t>());
+		import_file.close();
+	} else {
+		assert(!"unexpected uri type");
+	}
+
+	assert(encoded_encrypted_entries);
+	crypto::Ciphertext encrypted_entries =
+	    crypto::as_ciphertext(crypto::base64_decode(*encoded_encrypted_entries));
+
+	crypto::EncryptionKey key(derive_child(standard_export_dpath));
+
+	crypto::B64EncodedText decrypted_entries = crypto::decrypt(key, encrypted_entries);
+	std::string entries = crypto::base64_decode(decrypted_entries);
+	auto root = deserialize_directory(json::parse(entries), nullptr);
+	this->save_entries(root);
+}
+
 void Keychain::export_to_uri(const UriLocator &uri) const {
 	std::string db_entries;
 	if (auto s = db->Get(leveldb::ReadOptions(), DB_KEY_ENTRIES, &db_entries); !s.ok()) {
 		throw std::runtime_error("could not get entries from db");
 	}
 
-	crypto::DerivationPath standard_encryption_path = {
-	    255}; // TODO: should be predefined and reserved m/0/0
-	crypto::Seed standard_encryption_seed = derive_child(standard_encryption_path);
-	crypto::EncryptionKey key(standard_encryption_seed);
-	auto encrypted_entries = crypto::encrypt(key, db_entries);
+	crypto::B64EncodedText encoded_entries = crypto::base64_encode(db_entries);
+
+	crypto::EncryptionKey key(derive_child(standard_export_dpath));
+
+	crypto::Ciphertext encrypted_entries = crypto::encrypt(key, encoded_entries);
+	std::string encoded_encrypted_entries =
+	    crypto::as_string(crypto::base64_encode(encrypted_entries));
 	if (auto path = std::get_if<std::filesystem::path>(&uri)) {
 		std::ofstream export_file;
 		export_file.open(*path, std::ios::out);
-		std::ostream_iterator<uint8_t> output_iterator(export_file, "");
-		std::copy(encrypted_entries.begin(), encrypted_entries.end(), output_iterator);
+		export_file << encoded_encrypted_entries;
 		export_file.close();
 	} else {
-		throw std::runtime_error("unexpected uri type");
+		assert(!"unexpected uri type");
 	}
 }
 

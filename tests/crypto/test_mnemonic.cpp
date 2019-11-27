@@ -73,3 +73,11 @@ TEST_CASE( "seed calculation throws on invalid word", "[seeds_vector_throws_on_i
 		(void) crypto::mnemonic_to_seed(std::move(im.mnemonic));
 	}
 }
+
+TEST_CASE( "mnemonic is split into words properly", "[split_mnemonic]" ) {
+	std::vector<utils::sensitive_string> split = crypto::split_mnemonic_words({"word1 word2 word3 word4 somereallylongword s word7 word8 word9 w10 w11 w12 salt"});
+	std::vector<utils::sensitive_string> expected = {
+		{"word1"}, {"word2"}, {"word3"}, {"word4"}, {"somereallylongword"}, {"s"}, {"word7"}, {"word8"}, {"word9"}, {"w10"}, {"w11"}, {"w12"}, {"salt"}
+	};
+	REQUIRE( split == expected );
+}

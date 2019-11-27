@@ -29,6 +29,9 @@ using json = nlohmann::json;
 
 #include <external/catch2/catch.hpp>
 
+#include <fstream>
+#include <cstdio>
+
 class KeychainMock: public keychain::Keychain {
 public:
 	void set_db(std::unique_ptr<keychain::DB> db) { this->db = std::move(db); }
@@ -61,6 +64,10 @@ public:
 };
 
 json sample_entries = json::parse(R"({ "name": "dir1", "details": "details1", "dirs": [{"name": "dir2", "details": "details2", "dirs": [], "entries": [{"name": "entry1", "details": "entry_details1", "derivation_path": 6}]}], "entries": [{"name": "entry2", "details": "entry_details2", "derivation_path": 7}] })");
+
+crypto::PasswordHash sample_password_hash = crypto::deserialize<crypto::PasswordHash>("5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8");
+
+std::string sample_seed = "a0727f73ff7cb6eea580b5e808b26e28110add5a34481a7e2ac282e649c7d6feccf870a9448b901087adc0a224059e2855fcfe221c5db00dc598aad29c2593f6";
 
 struct seed_data_s {
 	std::string seed;
@@ -95,13 +102,11 @@ TEST_CASE( "secrets are derived properly", "[keychain_derive_secret]" ) {
 
 	KeychainMock kc;
 	kc.set_db(std::unique_ptr<keychain::DB>(db));
-
-	auto password_hash = crypto::deserialize<crypto::PasswordHash>("99e2177f9e650b9a38c6b72f9196fc46f87e80b9655002c70e6849bdfd14210f");
-	kc.set_ec(password_hash);
+	kc.set_ec(sample_password_hash);
 
 	auto rv = kc.derive_secret({ 1 });
 
-	REQUIRE( static_cast<std::string>(rv) == "XhGEe*rhgV" );
+	REQUIRE( static_cast<std::string>(rv) == "MkAsM%uZXu" );
 }
 
 TEST_CASE( "entries are saved as expected", "[keychain_save_entries]" ) {
@@ -144,4 +149,50 @@ TEST_CASE( "entries' root is created properly", "[keychain_get_root]" ) {
 	REQUIRE( root->dirs[0]->entries[0]->meta.name == "entry1" );
 
 	REQUIRE( root->entries[0]->meta.name == "entry2" );
+}
+
+TEST_CASE( "can export and import", "[keychain_export_import]" ) {
+	auto db = new DBMock();
+
+	db->Get_mock_fn = [](const leveldb::ReadOptions&, const leveldb::Slice& key, std::string* value) {
+		if (key.ToString() == "entries") {
+			*value = sample_entries.dump();
+			return leveldb::Status();
+		} else if (key.ToString() == "seed") {
+			*value = sample_seed;
+			return leveldb::Status();
+		}
+
+		REQUIRE( false );
+		return leveldb::Status();
+	};
+
+	std::function<void(std::string*)> on_finish_delete = [](std::string* path) { std::remove(path->c_str()); delete path; };
+	std::unique_ptr<std::string, decltype(on_finish_delete)> tmp_path (new std::string(std::tmpnam(nullptr)), on_finish_delete);
+
+	{ /* export */
+		KeychainMock kc;
+		auto m_db = new DBMock(*db);
+		kc.set_db(std::unique_ptr<keychain::DB>(m_db));
+		kc.set_ec(sample_password_hash);
+
+		kc.export_to_uri(*tmp_path);
+
+		std::ifstream export_file(*tmp_path, std::ios::in);
+		std::string fc;
+		export_file >> fc;
+		export_file.close();
+
+		REQUIRE( fc == "T/CjXuX2Qa3cGUMS8PFQhUL7Jky7Dc+Wq19k/zCEy8HnymriHKnLed1FcDjS+PTR4m4dlZXLCORJBY40UKvcr7AxD+kZ2CH6N6LlM5TxLiTRBuXIA2lgj3rfOz3pBbqbf5qQUIflPUIVc1WgTtKBwzFot4BGn2EtpYIhox4utGGcPKTD00xmCL6I9ltdWoDRWw6bhPcM7evAgAJ5R5zyCeNATbAqmrLedNWd6Olrsiawi4cNESMeuWp9zkvnwhZf5Rk4awZ6KRHg/KGuLaP9sp3o/kp21VQwe5M+8v16eJFODwK75v4J7nEDB1qa6sVWNWQEXkWnYKMk15HZwbQj/plra76K6YMtKpSdZJ5YNC1m4VWjkZM0lWtFGuNH1VwV1DLjkcNCHJU0BTHL0p3huKOqC0b/JhMaRI8XwUHDKmce3UnSUMyw3A==" );
+	}
+
+	{ /* import */
+		KeychainMock kc;
+		auto m_db = new DBMock(*db);
+		kc.set_db(std::unique_ptr<keychain::DB>(m_db));
+		kc.set_ec(sample_password_hash);
+
+		kc.import_from_uri(*tmp_path);
+		REQUIRE( keychain::serialize_directory(kc.get_root_dir()) == sample_entries );
+	}
 }

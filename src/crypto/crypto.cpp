@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <src/crypto/crypto.h>
 
+#include <external/cryptopp/base64.h>
 #include <external/cryptopp/modes.h>
 #include <external/cryptopp/osrng.h>
 #include <external/cryptopp/sha.h>
@@ -37,7 +38,58 @@ PasswordHash hash_password(const utils::sensitive_string &password) {
 	return pw_hash;
 }
 
-Ciphertext encrypt(const EncryptionKey &key, const std::string &to_encrypt) {
+namespace {
+
+B64EncodedText base64_encode(const CryptoPP::byte *data, size_t size) {
+	B64EncodedText encoded;
+	CryptoPP::Base64Encoder encoder(
+	    new CryptoPP::VectorSink(encoded), /* insertLineBreaks */ false);
+	encoder.Put(data, size);
+	encoder.MessageEnd();
+	return encoded;
+}
+
+} // namespace
+
+B64EncodedText as_encoded(const std::string &encoded_text) {
+	B64EncodedText ret;
+	ret.reserve(encoded_text.size());
+	for (auto c : encoded_text) {
+		ret.push_back(c);
+	}
+	return ret;
+}
+
+Ciphertext as_ciphertext(const std::string &encoded_text) { return as_encoded(encoded_text); }
+
+std::string as_string(const B64EncodedText &encoded_text) {
+	std::string ret;
+	ret.reserve(encoded_text.size());
+	for (auto c : encoded_text) {
+		ret.push_back(c);
+	}
+	return ret;
+}
+
+B64EncodedText base64_encode(const std::string &to_encode) {
+	return base64_encode(
+	    reinterpret_cast<const CryptoPP::byte *>(to_encode.c_str()), to_encode.size());
+}
+
+B64EncodedText base64_encode(const Ciphertext &to_encode) {
+	return base64_encode(
+	    reinterpret_cast<const CryptoPP::byte *>(to_encode.data()), to_encode.size());
+}
+
+std::string base64_decode(const B64EncodedText &to_decode) {
+	std::string decoded;
+	CryptoPP::Base64Decoder decoder(new CryptoPP::StringSink(decoded));
+	decoder.Put(reinterpret_cast<const CryptoPP::byte *>(to_decode.data()), to_decode.size());
+	decoder.MessageEnd();
+	return decoded;
+}
+
+Ciphertext encrypt(const EncryptionKey &key, const B64EncodedText &to_encrypt) {
 	Ciphertext ciphertext_block(to_encrypt.size());
 
 	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
@@ -46,26 +98,23 @@ Ciphertext encrypt(const EncryptionKey &key, const std::string &to_encrypt) {
 	CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption cfbEncryption(
 	    reinterpret_cast<const CryptoPP::byte *>(key.data()), EncryptionKey::Size, iv);
 	cfbEncryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(ciphertext_block.data()),
-	    reinterpret_cast<const CryptoPP::byte *>(to_encrypt.c_str()), to_encrypt.size());
+	    reinterpret_cast<const CryptoPP::byte *>(to_encrypt.data()), to_encrypt.size());
 
 	return ciphertext_block;
 }
 
-std::string decrypt(const EncryptionKey &key, const Ciphertext &to_decrypt) {
-	char *plaintext_block = new char[to_decrypt.size() + 1];
+B64EncodedText decrypt(const EncryptionKey &key, const Ciphertext &to_decrypt) {
+	std::vector<unsigned char> plaintext_block(to_decrypt.size());
 
 	CryptoPP::byte iv[CryptoPP::AES::BLOCKSIZE];
 	memset(iv, 0x00, CryptoPP::AES::BLOCKSIZE);
 
 	CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption cfbDecryption(
 	    reinterpret_cast<const CryptoPP::byte *>(key.data()), EncryptionKey::Size, iv);
-	cfbDecryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(plaintext_block),
+	cfbDecryption.ProcessData(reinterpret_cast<CryptoPP::byte *>(plaintext_block.data()),
 	    reinterpret_cast<const CryptoPP::byte *>(to_decrypt.data()), to_decrypt.size());
 
-	plaintext_block[to_decrypt.size()] = '\0';
-	std::string plaintext = std::string(plaintext_block);
-	delete[] plaintext_block;
-	return plaintext;
+	return plaintext_block;
 }
 
 EncryptedSeed encrypt_seed(const Seed &seed, const PasswordHash &password_hash) {

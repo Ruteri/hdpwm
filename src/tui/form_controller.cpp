@@ -21,6 +21,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <curses.h>
 
+FormController::FormController(WindowManager *wmanager) :
+    FormController(wmanager, nullptr, stdscr, []() {}, []() {}) {}
+
 FormController::FormController(WindowManager *wmanager, ScreenController *parent, WINDOW *&window,
     std::function<void()> on_done, std::function<void()> on_cancel) :
     ScreenController(wmanager),

@@ -19,19 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #pragma once
 
-#include <src/crypto/structs.h>
+#include <src/tui/form_controller.h>
 
-#include <string>
-#include <vector>
+#include <filesystem>
 
-namespace crypto {
-
-struct sensitive_string;
-
-std::vector<utils::sensitive_string> generate_mnemonic(int entropy_size);
-std::vector<utils::sensitive_string> split_mnemonic_words(const utils::sensitive_string &mnemonic);
-Seed mnemonic_to_seed(const std::vector<utils::sensitive_string> &words);
-
-int find_word_index(const utils::sensitive_string &word);
-
-} // namespace crypto
+class CreateKeychainScreen : public FormController {
+  public:
+	CreateKeychainScreen(WindowManager *wmanager, const std::filesystem::path &kc_path);
+};

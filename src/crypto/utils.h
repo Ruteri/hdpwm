@@ -45,6 +45,8 @@ struct sensitive_string {
 
 	explicit operator std::string() const;
 
+	char &operator[](size_t index) const { return data[index]; }
+
 	size_t size() const;
 	void resize(size_t);
 	void reserve(size_t);
