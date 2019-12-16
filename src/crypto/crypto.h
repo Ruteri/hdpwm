@@ -27,7 +27,6 @@ struct DerivationPath {
 	int seed;
 };
 
-using B64EncodedText = std::vector<uint8_t>;
 B64EncodedText as_encoded(const std::string &encoded_text);
 Ciphertext as_ciphertext(const std::string &encoded_text);
 std::string as_string(const B64EncodedText &encoded_text);

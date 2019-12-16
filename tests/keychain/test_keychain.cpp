@@ -53,12 +53,12 @@ public:
 	}
 
 	int Put_call_count = 0;
-	std::vector<std::tuple<leveldb::WriteOptions, std::pair<leveldb::Slice, leveldb::Slice>>> Put_calls;
+	std::vector<std::tuple<leveldb::WriteOptions, std::pair<std::string, std::string>>> Put_calls;
 	std::function<leveldb::Status(const leveldb::WriteOptions&, const leveldb::Slice&, const leveldb::Slice&)> Put_mock_fn =
 	    [](const leveldb::WriteOptions&, const leveldb::Slice&, const leveldb::Slice&) { return leveldb::Status(); };
 	leveldb::Status Put(const leveldb::WriteOptions& options, const leveldb::Slice& key, const leveldb::Slice& value) final {
 		++Put_call_count;
-		Put_calls.push_back({ options, {key, value} });
+		Put_calls.push_back({ options, {key.ToString(), value.ToString()} });
 		return Put_mock_fn(options, key, value);
 	}
 };
@@ -121,7 +121,7 @@ TEST_CASE( "entries are saved as expected", "[keychain_save_entries]" ) {
 
 	REQUIRE( db->Get_call_count == 0 );
 	REQUIRE( db->Put_call_count == 1 );
-	REQUIRE( std::get<1>(db->Put_calls[0]) == std::pair<leveldb::Slice, leveldb::Slice>{"entries", sample_entries.dump()} );
+	REQUIRE( std::get<1>(db->Put_calls[0]) == std::pair<std::string, std::string>{"entries", sample_entries.dump()} );
 }
 
 TEST_CASE( "entries' root is created properly", "[keychain_get_root]" ) {
@@ -152,9 +152,7 @@ TEST_CASE( "entries' root is created properly", "[keychain_get_root]" ) {
 }
 
 TEST_CASE( "can export and import", "[keychain_export_import]" ) {
-	auto db = new DBMock();
-
-	db->Get_mock_fn = [](const leveldb::ReadOptions&, const leveldb::Slice& key, std::string* value) {
+	auto entries_Get_mock_fn = [](const leveldb::ReadOptions&, const leveldb::Slice& key, std::string* value) {
 		if (key.ToString() == "entries") {
 			*value = sample_entries.dump();
 			return leveldb::Status();
@@ -172,8 +170,9 @@ TEST_CASE( "can export and import", "[keychain_export_import]" ) {
 
 	{ /* export */
 		KeychainMock kc;
-		auto m_db = new DBMock(*db);
-		kc.set_db(std::unique_ptr<keychain::DB>(m_db));
+		auto db = new DBMock();
+		db->Get_mock_fn = entries_Get_mock_fn;
+		kc.set_db(std::unique_ptr<keychain::DB>(db));
 		kc.set_ec(sample_password_hash);
 
 		kc.export_to_uri(*tmp_path);
@@ -188,8 +187,9 @@ TEST_CASE( "can export and import", "[keychain_export_import]" ) {
 
 	{ /* import */
 		KeychainMock kc;
-		auto m_db = new DBMock(*db);
-		kc.set_db(std::unique_ptr<keychain::DB>(m_db));
+		auto db = new DBMock();
+		db->Get_mock_fn = entries_Get_mock_fn;
+		kc.set_db(std::unique_ptr<keychain::DB>(db));
 		kc.set_ec(sample_password_hash);
 
 		kc.import_from_uri(*tmp_path);

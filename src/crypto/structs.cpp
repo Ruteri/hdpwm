@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include <src/crypto/structs.h>
+#include <src/crypto/utils.h>
 
 #include <iostream>
 
@@ -69,6 +70,7 @@ template <typename RARR> RARR deserialize(const std::string &hexstr) {
 		}
 
 		rarr.resize(hsize / 2);
+		rarr.index = hsize / 2;
 	} else if (hsize != RARR::Size * 2) {
 		throw std::runtime_error(
 		    "invalid string passed to deserialization (length does not match)");
@@ -76,7 +78,7 @@ template <typename RARR> RARR deserialize(const std::string &hexstr) {
 
 	for (unsigned int i = 0; i + 2 <= hsize; i += 2) {
 		if (auto [p, ec] =
-		        std::from_chars(hexstr.c_str() + i, hexstr.c_str() + i + 2, rarr[i / 2], 16);
+		        std::from_chars(hexstr.c_str() + i, hexstr.c_str() + i + 2, (unsigned char &) rarr[i / 2], 16);
 		    ec != std::errc()) {
 			throw std::runtime_error(
 			    "invalid string passed to deserialization (invalid character)");
