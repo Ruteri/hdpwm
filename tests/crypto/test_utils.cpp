@@ -41,17 +41,17 @@ TEST_CASE( "constructors are sane", "[sensitive_string_ctrs]" ) {
 		sensitive_string cpy = dflt;
 		REQUIRE( cpy.index == 0 );
 		REQUIRE( cpy.max_size == 32 );
-		REQUIRE( cpy.data != dflt.data );
+		REQUIRE( cpy._data != dflt._data );
 	}
 
 	{
 		sensitive_string dflt;
-		auto data_ptr = dflt.data;
+		auto data_ptr = dflt._data;
 		sensitive_string mv = std::move(dflt);
 		REQUIRE( mv.index == 0 );
 		REQUIRE( mv.max_size == 32 );
-		REQUIRE( mv.data == data_ptr );
-		REQUIRE( dflt.data == nullptr );
+		REQUIRE( mv._data == data_ptr );
+		REQUIRE( dflt._data == nullptr );
 	}
 
 	{
@@ -68,6 +68,7 @@ TEST_CASE( "constructors are sane", "[sensitive_string_ctrs]" ) {
 	}
 }
 
+/* ASAN rightfuly reports this function but the check is exactly about use-after-free */
 TEST_CASE( "destructor clears memory", "[sensitive_string_destrc]" ) {
 	char *block = new char[48];
 
@@ -76,7 +77,7 @@ TEST_CASE( "destructor clears memory", "[sensitive_string_destrc]" ) {
 	}
 
 	sensitive_string dflt;
-	dflt.data = block;
+	dflt._data = block;
 
 	{
 		sensitive_string from_str(std::move(dflt));
@@ -137,26 +138,26 @@ TEST_CASE( "size is calculated properly", "[sensitive_string_size]" ) {
 	sensitive_string from_str("xxxx");
 	REQUIRE( from_str.size() == 4 );
 	from_str.resize(2);
-	REQUIRE( from_str.size() == 1 );
-	from_str.push_back('y');
 	REQUIRE( from_str.size() == 2 );
+	from_str.push_back('y');
+	REQUIRE( from_str.size() == 3 );
 	from_str.push_back('y');
 }
 
 TEST_CASE( "resize and reserve work as intended", "[sensitive_string_resize_reserve]" ) {
 	sensitive_string str(8);
-	char *ptr = str.data;
+	char *ptr = str._data;
 	str.reserve(4);
-	REQUIRE( str.data == ptr );
+	REQUIRE( str._data == ptr );
 	REQUIRE( str.max_size == 8 );
 
 	str.resize(4);
-	REQUIRE( str.data != ptr );
+	REQUIRE( str._data != ptr );
 	REQUIRE( str.max_size == 4 );
 
-	ptr = str.data;
+	ptr = str._data;
 	str.reserve(16);
-	REQUIRE( str.data != ptr );
+	REQUIRE( str._data != ptr );
 	REQUIRE( str.max_size == 16 );
 }
 
@@ -164,31 +165,31 @@ TEST_CASE( "push and pop work", "[sensitive_string_push_pop_back]" ) {
 	sensitive_string str(2);
 	str.pop_back();
 	REQUIRE( str.index == 0 );
-	REQUIRE( str.data[0] == '\0' );
+	REQUIRE( str._data[0] == '\0' );
 
 	str.push_back('x');
 	REQUIRE( str.index == 1 );
 	REQUIRE( str.size() == 1 );
 	REQUIRE( str.max_size == 2 );
-	REQUIRE( str.data[0] == 'x' );
+	REQUIRE( str._data[0] == 'x' );
 
 	str.push_back('x');
 	REQUIRE( str.index == 2 );
 	REQUIRE( str.size() == 2 );
 	REQUIRE( str.max_size == 2 );
-	REQUIRE( str.data[1] == 'x' );
+	REQUIRE( str._data[1] == 'x' );
 
 	str.push_back('x');
 	REQUIRE( str.index == 3 );
 	REQUIRE( str.size() == 3 );
 	REQUIRE( str.max_size == 4 );
-	for (int i = 0; i < 3; ++i) REQUIRE( str.data[i] == 'x' );
+	for (int i = 0; i < 3; ++i) REQUIRE( str._data[i] == 'x' );
 
 	str.pop_back();
 	REQUIRE( str.index == 2 );
 	REQUIRE( str.size() == 2 );
 	REQUIRE( str.max_size == 4 );
-	REQUIRE( str.data[2] == '\0' );
+	REQUIRE( str._data[2] == '\0' );
 }
 
 TEST_CASE( "operator[] works as intended", "[sensitive_string_operator_sqb]" ) {

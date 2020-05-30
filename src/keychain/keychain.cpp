@@ -114,15 +114,14 @@ std::unique_ptr<Keychain> Keychain::open(std::filesystem::path path, crypto::Pas
 }
 
 void Keychain::import_from_uri(const UriLocator &uri) {
-	std::optional<std::vector<uint8_t>> encoded_encrypted_entries{};
+	std::optional<utils::sensitive_string> encoded_encrypted_entries{};
 
 	if (auto import_path = std::get_if<std::filesystem::path>(&uri)) {
 		std::ifstream import_file;
 		import_file.open(*import_path, std::ios::in);
-		std::istream_iterator<uint8_t> input_iterator(import_file);
-
-		encoded_encrypted_entries =
-		    std::vector<uint8_t>(input_iterator, std::istream_iterator<uint8_t>());
+		std::string is;
+		import_file >> is;
+		encoded_encrypted_entries = utils::sensitive_string(std::move(is));
 		import_file.close();
 	} else {
 		assert(!"unexpected uri type");
@@ -136,7 +135,8 @@ void Keychain::import_from_uri(const UriLocator &uri) {
 
 	crypto::B64EncodedText decrypted_entries = crypto::decrypt(key, encrypted_entries);
 	std::string entries = crypto::base64_decode(decrypted_entries);
-	auto root = deserialize_directory(json::parse(entries), nullptr);
+	auto parsed_entries = json::parse(entries);
+	auto root = deserialize_directory(parsed_entries, nullptr);
 	this->save_entries(root);
 }
 
@@ -220,7 +220,7 @@ utils::sensitive_string Keychain::encode_secret(
 
 crypto::Seed Keychain::derive_child(const crypto::DerivationPath &dpath) const {
 	std::string seed_str{};
-	seed_str.reserve(crypto::Seed::Size + 1); // reserve to avoid leaving seed in memory
+	seed_str.reserve(crypto::Seed::Size * 2 + 1); // reserve to avoid leaving seed in memory
 	if (auto s = db->Get(leveldb::ReadOptions(), DB_KEY_SEED, &seed_str); !s.ok()) {
 		throw std::runtime_error("could not load seed from db");
 	}

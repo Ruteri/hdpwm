@@ -39,6 +39,6 @@ void SensitiveOutputHandler::m_draw(WINDOW *window) {
 
 	ColorGuard cg{window, ColorPair::ALL_RED};
 	for (size_t i = 0; i < sensitive_output.size(); ++i) {
-		waddch(window, sensitive_output.data[i]);
+		waddch(window, sensitive_output[i]);
 	}
 }

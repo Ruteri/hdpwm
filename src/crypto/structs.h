@@ -34,8 +34,13 @@ template <int S, typename CV> struct ByteArray {
 	using UnderlyingType = std::array<unsigned char, Size>;
 	UnderlyingType _data;
 
-	ByteArray() = default;
-	// ~ByteArray() {}
+	ByteArray() {
+		lock_mem(_data.data(), Size);
+	}
+
+	~ByteArray() {
+		unlock_mem(_data.data(), Size);
+	}
 
 	ByteArray(UnderlyingType &&other) : _data(std::move(other)) {}
 
@@ -73,10 +78,11 @@ struct EncryptedSeed : ByteArray<512, EncryptedSeed> {};
 
 struct EncryptionKey : ByteArray<256, EncryptionKey> {
 	EncryptionKey() = default;
-	EncryptionKey(const Seed &seed) { std::copy(seed.begin() + 32, seed.end(), _data.begin()); }
+	EncryptionKey(const Seed &seed) : ByteArray<256, EncryptionKey>() { std::copy(seed.begin() + 32, seed.end(), _data.begin()); }
 };
 
-using Ciphertext = std::vector<unsigned char>;
+using Ciphertext = utils::sensitive_string;
+using B64EncodedText = utils::sensitive_string;
 
 template <typename AR> std::string serialize(const AR &data);
 

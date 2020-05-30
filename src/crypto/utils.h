@@ -22,12 +22,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <cstddef>
 #include <string>
 
+namespace crypto {
+
+void lock_mem(const void *mem, size_t size);
+void unlock_mem(const void *mem, size_t size);
+
+} // namespace crypto
+
 namespace utils {
 
 struct sensitive_string {
 	size_t index = 0;
 	size_t max_size = 32;
-	char *data = nullptr;
+	char *_data = nullptr;
 
 	sensitive_string();
 	explicit sensitive_string(int size);
@@ -37,7 +44,8 @@ struct sensitive_string {
 	sensitive_string &operator=(const sensitive_string &);
 	sensitive_string &operator=(sensitive_string &&);
 
-	sensitive_string(const char *);
+	sensitive_string(const char *str);
+	sensitive_string(const char *data, size_t size);
 	explicit sensitive_string(const std::string &);
 	explicit sensitive_string(std::string &&);
 
@@ -45,7 +53,10 @@ struct sensitive_string {
 
 	explicit operator std::string() const;
 
-	char &operator[](size_t index) const { return data[index]; }
+	char &operator[](size_t index) const { return _data[index]; }
+
+	char *data() const { return _data; }
+	const char *c_str() const { return _data; }
 
 	size_t size() const;
 	void resize(size_t);
