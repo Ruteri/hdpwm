@@ -32,9 +32,17 @@ add_subdirectory(external/p-ranav/argparse)
 
 add_compile_options(-Wall -Wextra -Wpedantic)
 
-# TODO: add CMakeLists.txt (or at least proper generation) to cryptopp
-add_library(cryptopp STATIC IMPORTED)
-set_target_properties(cryptopp PROPERTIES IMPORTED_LOCATION ${CMAKE_CURRENT_SOURCE_DIR}/external/cryptopp/libcryptopp.a)
+include(ExternalProject)
+ExternalProject_Add(cryptopp_project
+    PREFIX external/cryptopp
+    SOURCE_DIR external/cryptopp
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND make
+    BUILD_IN_SOURCE 1
+    INSTALL_COMMAND ""
+    )
+
+link_directories(external/cryptopp)
 
 include_directories(.)
 
