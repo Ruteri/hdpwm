@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ]]
 cmake_minimum_required (VERSION 3.10)
-project (hdpwmanager)
+project (hdpwmanager VERSION 0.1)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -34,17 +34,16 @@ add_compile_options(-Wall -Wextra -Wpedantic)
 
 include(ExternalProject)
 ExternalProject_Add(cryptopp_project
-    PREFIX external/cryptopp
-    SOURCE_DIR external/cryptopp
-    CONFIGURE_COMMAND ""
+    PREFIX ${PROJECT_SOURCE_DIR}/external/cryptopp
+    SOURCE_DIR ${PROJECT_SOURCE_DIR}/external/cryptopp
+    DOWNLOAD_COMMAND "" UPDATE_COMMAND "" PATCH_COMMAND "" CONFIGURE_COMMAND "" INSTALL_COMMAND ""
+    UPDATE_DISCONNECTED True
+    BUILD_IN_SOURCE true
     BUILD_COMMAND make
-    BUILD_IN_SOURCE 1
-    INSTALL_COMMAND ""
     )
 
 link_directories(external/cryptopp)
 
 include_directories(.)
-
 add_subdirectory(src)
 add_subdirectory(tests)
