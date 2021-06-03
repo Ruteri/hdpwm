@@ -20,6 +20,7 @@ add_subdirectory(utils)
 add_subdirectory(crypto)
 add_subdirectory(keychain)
 add_subdirectory(tui)
+add_subdirectory(qt)
 
 add_executable(hdpmanager tui/tui.cpp)
 target_link_libraries(hdpmanager PRIVATE tui crypto)
